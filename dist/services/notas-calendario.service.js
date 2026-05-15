@@ -1,0 +1,121 @@
+import { prisma } from "../database/prisma.js";
+import { AppError } from "../utils/app-error.js";
+function buildWhereNotas(filtros) {
+    const where = {
+        id_usuario: filtros.id_usuario,
+    };
+    if (filtros.tipo) {
+        where.tipo = filtros.tipo;
+    }
+    if (typeof filtros.completada === "boolean") {
+        where.completada = filtros.completada;
+    }
+    if (filtros.fecha_desde || filtros.fecha_hasta) {
+        where.fecha = {};
+        if (filtros.fecha_desde) {
+            where.fecha.gte = filtros.fecha_desde;
+        }
+        if (filtros.fecha_hasta) {
+            where.fecha.lte = filtros.fecha_hasta;
+        }
+    }
+    return where;
+}
+export async function getNotas(filtros) {
+    return prisma.notas_calendario.findMany({
+        where: buildWhereNotas(filtros),
+        orderBy: [
+            { fecha: "asc" },
+            { id_nota: "asc" },
+        ],
+    });
+}
+export async function getNotasByMes(anio, mes, id_usuario) {
+    const fechaDesde = new Date(Date.UTC(anio, mes - 1, 1, 0, 0, 0, 0));
+    const fechaHasta = new Date(Date.UTC(anio, mes, 0, 23, 59, 59, 999));
+    return getNotas({
+        id_usuario,
+        fecha_desde: fechaDesde,
+        fecha_hasta: fechaHasta,
+    });
+}
+export async function getNotaById(id, id_usuario) {
+    const nota = await prisma.notas_calendario.findFirst({
+        where: {
+            id_nota: id,
+            id_usuario,
+        },
+    });
+    if (!nota) {
+        throw new AppError("Nota no encontrada", 404);
+    }
+    return nota;
+}
+export async function createNota(data, id_usuario) {
+    return prisma.notas_calendario.create({
+        data: {
+            id_usuario,
+            titulo: data.titulo,
+            descripcion: data.descripcion ?? null,
+            fecha: data.fecha,
+            fecha_fin: data.fecha_fin ?? null,
+            tipo: data.tipo,
+            color: data.color ?? null,
+            todo_el_dia: data.todo_el_dia ?? true,
+        },
+    });
+}
+export async function updateNota(id, data, id_usuario) {
+    await getNotaById(id, id_usuario);
+    const updateData = {};
+    if (data.titulo !== undefined) {
+        updateData.titulo = data.titulo;
+    }
+    if (data.descripcion !== undefined) {
+        updateData.descripcion = data.descripcion;
+    }
+    if (data.fecha !== undefined) {
+        updateData.fecha = data.fecha;
+    }
+    if (data.fecha_fin !== undefined) {
+        updateData.fecha_fin = data.fecha_fin;
+    }
+    if (data.tipo !== undefined) {
+        updateData.tipo = data.tipo;
+    }
+    if (data.color !== undefined) {
+        updateData.color = data.color;
+    }
+    if (data.todo_el_dia !== undefined) {
+        updateData.todo_el_dia = data.todo_el_dia;
+    }
+    return prisma.notas_calendario.update({
+        where: {
+            id_nota: id,
+        },
+        data: updateData,
+    });
+}
+export async function toggleCompletada(id, id_usuario) {
+    const nota = await getNotaById(id, id_usuario);
+    return prisma.notas_calendario.update({
+        where: {
+            id_nota: id,
+        },
+        data: {
+            completada: !nota.completada,
+        },
+    });
+}
+export async function deleteNota(id, id_usuario) {
+    await getNotaById(id, id_usuario);
+    await prisma.notas_calendario.delete({
+        where: {
+            id_nota: id,
+        },
+    });
+    return {
+        success: true,
+    };
+}
+//# sourceMappingURL=notas-calendario.service.js.map

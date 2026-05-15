@@ -1,0 +1,386 @@
+import { prisma } from "../database/prisma.js";
+export class ExpedicionesService {
+    /**
+     * Validar si una expedición tiene cupos disponibles
+     */
+    static async validateCuposDisponibles(id_expedicion) {
+        const expedicion = await prisma.expediciones.findUnique({
+            where: { id_expedicion },
+            select: {
+                id_expedicion: true,
+                cupos_disponibles: true,
+                cupos_ocupados: true,
+                estado: true,
+                servicios: {
+                    select: {
+                        nombre: true,
+                    },
+                },
+            },
+        });
+        if (!expedicion) {
+            return {
+                valid: false,
+                message: "Expedición no encontrada",
+            };
+        }
+        if (expedicion.estado !== "Activa" && expedicion.estado !== "A") {
+            return {
+                valid: false,
+                message: `La expedición "${expedicion.servicios.nombre}" no está activa`,
+            };
+        }
+        const cuposLibres = expedicion.cupos_disponibles - expedicion.cupos_ocupados;
+        if (cuposLibres <= 0) {
+            return {
+                valid: false,
+                message: `La expedición "${expedicion.servicios.nombre}" no tiene cupos disponibles. Todos los cupos están ocupados.`,
+                cuposLibres: 0,
+            };
+        }
+        return {
+            valid: true,
+            message: `La expedición "${expedicion.servicios.nombre}" tiene ${cuposLibres} cupo${cuposLibres !== 1 ? "s" : ""} disponible${cuposLibres !== 1 ? "s" : ""}`,
+            cuposLibres,
+            expedicion,
+        };
+    }
+    /**
+     * Obtener todas las expediciones con filtros opcionales
+     */
+    static async getAll(filters = {}) {
+        const page = filters.page || 1;
+        const limit = filters.limit || 50;
+        const skip = (page - 1) * limit;
+        const where = {};
+        if (filters.estado) {
+            where.estado = filters.estado;
+        }
+        if (filters.servicio) {
+            where.id_servicio = filters.servicio;
+        }
+        if (filters.fecha_desde || filters.fecha_hasta) {
+            where.fecha_salida = {};
+            if (filters.fecha_desde) {
+                where.fecha_salida.gte = new Date(filters.fecha_desde);
+            }
+            if (filters.fecha_hasta) {
+                where.fecha_salida.lte = new Date(filters.fecha_hasta);
+            }
+        }
+        const [expediciones, total] = await Promise.all([
+            prisma.expediciones.findMany({
+                where,
+                skip,
+                take: limit,
+                include: {
+                    servicios: {
+                        include: {
+                            lugares: {
+                                include: {
+                                    ubicaciones: true,
+                                },
+                            },
+                            actividades: true,
+                            dificultades: true,
+                        },
+                    },
+                    expedicion_precios: true,
+                },
+                orderBy: {
+                    fecha_salida: "desc",
+                },
+            }),
+            prisma.expediciones.count({ where }),
+        ]);
+        return {
+            success: true,
+            data: {
+                data: expediciones,
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit),
+            },
+        };
+    }
+    /**
+     * Obtener expedición por ID
+     */
+    static async getById(id) {
+        const expedicion = await prisma.expediciones.findUnique({
+            where: { id_expedicion: id },
+            include: {
+                servicios: {
+                    include: {
+                        lugares: {
+                            include: {
+                                ubicaciones: true,
+                            },
+                        },
+                        actividades: true,
+                        dificultades: true,
+                    },
+                },
+                expedicion_precios: true,
+                inscripciones: {
+                    include: {
+                        clientes: {
+                            select: {
+                                id_cliente: true,
+                                nombre: true,
+                                apellido: true,
+                                email: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        if (!expedicion) {
+            throw new Error("Expedición no encontrada");
+        }
+        return {
+            success: true,
+            data: expedicion,
+        };
+    }
+    /**
+     * Obtener expediciones activas (para selects)
+     */
+    static async getActive() {
+        const expediciones = await prisma.expediciones.findMany({
+            where: {
+                OR: [
+                    { estado: "A" },
+                    { estado: "Activa" },
+                ],
+            },
+            include: {
+                servicios: {
+                    select: {
+                        id_servicio: true,
+                        nombre: true,
+                    },
+                },
+                expedicion_precios: true,
+            },
+            orderBy: {
+                fecha_salida: "asc",
+            },
+        });
+        return {
+            success: true,
+            data: expediciones,
+        };
+    }
+    /**
+     * Crear nueva expedición
+     */
+    static async create(data) {
+        // Validar que el servicio existe
+        const servicio = await prisma.servicios.findUnique({
+            where: { id_servicio: data.id_servicio },
+        });
+        if (!servicio) {
+            throw new Error("El servicio seleccionado no existe");
+        }
+        // Validar fechas
+        const fechaSalida = new Date(data.fecha_salida);
+        const fechaFin = new Date(data.fecha_fin);
+        if (fechaSalida > fechaFin) {
+            throw new Error("La fecha de fin debe ser posterior a la fecha de salida");
+        }
+        // Validar precios
+        if (!data.precios || data.precios.length === 0) {
+            throw new Error("Debe agregar al menos un precio");
+        }
+        // Crear expedición con precios
+        const expedicion = await prisma.expediciones.create({
+            data: {
+                id_servicio: data.id_servicio,
+                fecha_salida: fechaSalida,
+                fecha_fin: fechaFin,
+                cupos_disponibles: data.cupos_disponibles,
+                cupos_ocupados: 0,
+                estado: data.estado || "Activa",
+                presupuesto_valido_hasta: data.presupuesto_valido_hasta
+                    ? new Date(data.presupuesto_valido_hasta)
+                    : null,
+                expedicion_precios: {
+                    create: data.precios.map((p) => ({
+                        nombre_paquete: p.nombre_paquete,
+                        precio: p.precio,
+                        moneda: p.moneda,
+                    })),
+                },
+            },
+            include: {
+                servicios: {
+                    select: {
+                        nombre: true,
+                    },
+                },
+                expedicion_precios: true,
+            },
+        });
+        return {
+            success: true,
+            data: expedicion,
+            message: "Expedición creada exitosamente",
+        };
+    }
+    /**
+     * Actualizar expedición existente
+     */
+    static async update(id, data) {
+        // Verificar que existe
+        const existente = await prisma.expediciones.findUnique({
+            where: { id_expedicion: id },
+            include: { inscripciones: true },
+        });
+        if (!existente) {
+            throw new Error("Expedición no encontrada");
+        }
+        // Validar que no se reducen cupos por debajo de los ocupados
+        if (data.cupos_disponibles < existente.cupos_ocupados) {
+            throw new Error(`No se pueden reducir los cupos a ${data.cupos_disponibles}. Ya hay ${existente.cupos_ocupados} inscripciones confirmadas.`);
+        }
+        // Validar fechas
+        const fechaSalida = new Date(data.fecha_salida);
+        const fechaFin = new Date(data.fecha_fin);
+        if (fechaSalida > fechaFin) {
+            throw new Error("La fecha de fin debe ser posterior a la fecha de salida");
+        }
+        // Actualizar expedición usando transacción
+        const expedicion = await prisma.$transaction(async (tx) => {
+            // Eliminar precios existentes
+            await tx.expedicion_precios.deleteMany({
+                where: { id_expedicion: id },
+            });
+            // Actualizar expedición y crear nuevos precios
+            return tx.expediciones.update({
+                where: { id_expedicion: id },
+                data: {
+                    id_servicio: data.id_servicio,
+                    fecha_salida: fechaSalida,
+                    fecha_fin: fechaFin,
+                    cupos_disponibles: data.cupos_disponibles,
+                    estado: data.estado,
+                    presupuesto_valido_hasta: data.presupuesto_valido_hasta
+                        ? new Date(data.presupuesto_valido_hasta)
+                        : null,
+                    expedicion_precios: {
+                        create: data.precios.map((p) => ({
+                            nombre_paquete: p.nombre_paquete,
+                            precio: p.precio,
+                            moneda: p.moneda,
+                        })),
+                    },
+                },
+                include: {
+                    servicios: {
+                        select: {
+                            nombre: true,
+                        },
+                    },
+                    expedicion_precios: true,
+                },
+            });
+        });
+        return {
+            success: true,
+            data: expedicion,
+            message: "Expedición actualizada exitosamente",
+        };
+    }
+    /**
+     * Eliminar expedición
+     */
+    static async delete(id) {
+        // Verificar que existe
+        const existente = await prisma.expediciones.findUnique({
+            where: { id_expedicion: id },
+            include: {
+                inscripciones: true,
+                servicios: { select: { nombre: true } },
+            },
+        });
+        if (!existente) {
+            throw new Error("Expedición no encontrada");
+        }
+        // Verificar si tiene inscripciones activas
+        const inscripcionesActivas = existente.inscripciones.filter((i) => i.estado !== "Cancelado");
+        if (inscripcionesActivas.length > 0) {
+            throw new Error(`No se puede eliminar la expedición "${existente.servicios.nombre}". Tiene ${inscripcionesActivas.length} inscripción(es) activa(s).`);
+        }
+        // Eliminar (los precios se eliminan en cascada)
+        await prisma.expediciones.delete({
+            where: { id_expedicion: id },
+        });
+        return {
+            success: true,
+            message: "Expedición eliminada exitosamente",
+        };
+    }
+    /**
+     * Cambiar estado de expedición
+     */
+    static async changeEstado(id, estado) {
+        // Validar estado
+        const estadosValidos = ["Activa", "Completa", "Finalizada", "Suspendida", "Cancelada"];
+        if (!estadosValidos.includes(estado)) {
+            throw new Error(`Estado inválido. Debe ser uno de: ${estadosValidos.join(", ")}`);
+        }
+        // Verificar que existe
+        const existente = await prisma.expediciones.findUnique({
+            where: { id_expedicion: id },
+        });
+        if (!existente) {
+            throw new Error("Expedición no encontrada");
+        }
+        // Actualizar estado
+        const expedicion = await prisma.expediciones.update({
+            where: { id_expedicion: id },
+            data: { estado },
+            include: {
+                servicios: {
+                    select: { nombre: true },
+                },
+            },
+        });
+        return {
+            success: true,
+            data: expedicion,
+            message: `Estado cambiado a ${estado}`,
+        };
+    }
+    /**
+     * Recalcular cupos ocupados basado en inscripciones confirmadas
+     */
+    static async recalcularCupos(id_expedicion) {
+        const inscripcionesConfirmadas = await prisma.inscripciones.count({
+            where: {
+                id_expedicion,
+                estado: {
+                    in: ["Confirmado", "Inscripto"],
+                },
+            },
+        });
+        const expedicion = await prisma.expediciones.update({
+            where: { id_expedicion },
+            data: {
+                cupos_ocupados: inscripcionesConfirmadas,
+            },
+        });
+        // Si se llenaron los cupos, cambiar estado a Completa
+        if (expedicion.cupos_ocupados >= expedicion.cupos_disponibles && expedicion.estado === "Activa") {
+            await prisma.expediciones.update({
+                where: { id_expedicion },
+                data: { estado: "Completa" },
+            });
+        }
+        return expedicion;
+    }
+}
+//# sourceMappingURL=expediciones.service.js.map

@@ -1,0 +1,321 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ubicaciones {
+  id_ubicacion Int    @id @default(autoincrement())
+  pais         String
+  provincia    String
+  zona         String
+
+  lugares lugares[]
+}
+
+model lugares {
+  id_lugar     Int    @id @default(autoincrement())
+  nombre       String
+  tipo_lugar   String
+  altitud      Int
+  descripcion  String?
+  id_ubicacion Int
+
+  ubicaciones ubicaciones @relation(fields: [id_ubicacion], references: [id_ubicacion])
+  servicios   servicios[]
+}
+
+model actividades {
+  id_actividad Int    @id @default(autoincrement())
+  nombre       String
+  descripcion  String?
+
+  servicios servicios[]
+}
+
+model dificultades {
+  id_dificultad Int    @id @default(autoincrement())
+  nivel         String
+  descripcion   String?
+
+  servicios servicios[]
+}
+
+model items_servicio {
+  id_item_servicio Int    @id @default(autoincrement())
+  nombre           String  @unique
+  descripcion      String?
+  categoria        String
+  es_adicional     Boolean @default(false)
+  activo           Boolean
+
+  servicio_items servicio_items[]
+}
+
+model servicios {
+  id_servicio        Int    @id @default(autoincrement())
+  nombre             String
+  /// Identificador único para URLs públicas (/salidas/:slug)
+  slug               String? @unique
+  id_lugar           Int
+  id_actividad       Int
+  id_dificultad      Int
+  duracion_dias      Int
+  duracion_noches    Int
+  altura_maxima      Int
+  desnivel           Int?
+  descripcion_completa String?
+  desc_resumen       String?
+  descripcion_recorrido String?
+  sobre_lugar        String?
+  clima_recomendado  String?
+  temperatura_dia_min Int?
+  temperatura_dia_max Int?
+  temperatura_noche_min Int?
+  temporada_recomendada String[]
+  experiencia_requerida String?
+  horas_caminata_diarias String?
+  peso_mochila       String?
+  conocimientos_tecnicos_requeridos Boolean @default(false)
+  punto_encuentro    String?
+  comodidades        String?
+  briefing_info      String?
+  consideraciones_especiales String[]
+  modalidad          String?
+  cupos_maximos      Int?
+  ratio_guia_pasajero String?
+  alimentacion_detalle String?
+  servicios_incluidos String[]
+  servicios_no_incluidos String[]
+  servicios_adicionales_disponibles String[]
+  diferenciadores    String[]
+  gestion_cargas     String[]
+  destacado          Boolean @default(false)
+  activo             Boolean @default(true)
+  url_foto           String?
+  urls_fotos         String[]
+  fecha_creacion     DateTime @default(now())
+  fecha_actualizacion DateTime @updatedAt
+
+  lugares      lugares      @relation(fields: [id_lugar], references: [id_lugar])
+  actividades  actividades  @relation(fields: [id_actividad], references: [id_actividad])
+  dificultades dificultades @relation(fields: [id_dificultad], references: [id_dificultad])
+  servicio_items servicio_items[]
+  itinerarios    itinerarios[]
+  expediciones   expediciones[]
+}
+
+model servicio_items {
+  id_servicio_item  Int   @id @default(autoincrement())
+  id_servicio       Int
+  id_item_servicio  Int
+  incluido          Boolean
+  observacion       String?
+
+  servicios      servicios      @relation(fields: [id_servicio], references: [id_servicio])
+  items_servicio items_servicio @relation(fields: [id_item_servicio], references: [id_item_servicio])
+}
+
+model itinerarios {
+  id_itinerario Int    @id @default(autoincrement())
+  id_servicio   Int
+  dia           Int
+  total_dias    Int?
+  titulo        String
+  descripcion   String?
+  hora_inicio   String?
+  hora_fin      String?
+  distancia_km  Int?
+  desnivel_metros Int?
+  duracion_horas String?
+  alojamiento   String?
+  comidas       String[]
+  actividades_especiales String[]
+  altitud       Int?
+  peso_mochila  String?
+  intensidad    String?
+
+  servicios servicios @relation(fields: [id_servicio], references: [id_servicio])
+}
+
+model expediciones {
+  id_expedicion     Int      @id @default(autoincrement())
+  id_servicio       Int
+  fecha_salida      DateTime
+  fecha_fin         DateTime
+  cupos_disponibles Int
+  cupos_ocupados    Int @default(0)
+  estado            String
+  presupuesto_valido_hasta DateTime?
+  fecha_creacion    DateTime @default(now())
+  fecha_actualizacion DateTime @updatedAt
+
+  servicios               servicios               @relation(fields: [id_servicio], references: [id_servicio])
+  inscripciones          inscripciones[]
+  expedicion_coordinadores expedicion_coordinadores[]
+  expedicion_precios      expedicion_precios[]
+  inscripcion_tokens      inscripcion_tokens[]
+}
+
+model expedicion_precios {
+  id_expedicion_precio Int      @id @default(autoincrement())
+  id_expedicion        Int
+  nombre_paquete       String
+  precio               Decimal
+  moneda               String
+
+  expediciones expediciones @relation(fields: [id_expedicion], references: [id_expedicion], onDelete: Cascade)
+}
+
+model roles {
+  id_rol   Int    @id @default(autoincrement())
+  codigo   String @unique
+  nombre   String
+
+  usuario_roles usuario_roles[]
+}
+
+model usuarios {
+  id_usuario      Int      @id @default(autoincrement())
+  firebase_uid    String   @unique
+  email           String   @unique
+  username        String?  @unique
+  nombre          String
+  apellido        String
+  fecha_registro  DateTime @default(now())
+  fecha_actualizacion DateTime @updatedAt
+  activo          Boolean  @default(true)
+
+  usuario_roles usuario_roles[]
+  cliente       clientes?
+}
+
+model usuario_roles {
+  id         Int @id @default(autoincrement())
+  id_usuario Int
+  id_rol     Int
+
+  usuarios usuarios @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+  roles    roles    @relation(fields: [id_rol], references: [id_rol], onDelete: Cascade)
+
+  @@unique([id_usuario, id_rol])
+}
+
+/// Registro comercial creado por admin; 1:1 con cuenta usuarios (rol cliente).
+model clientes {
+  id_cliente     Int      @id @default(autoincrement())
+  id_usuario     Int      @unique
+  nombre         String
+  apellido       String
+  email          String   @unique
+  fecha_creacion DateTime @default(now())
+
+  usuarios           usuarios            @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade)
+  inscripciones      inscripciones[]
+  inscripcion_tokens inscripcion_tokens[]
+}
+
+model inscripciones {
+  id_inscripcion    Int      @id @default(autoincrement())
+  id_cliente        Int
+  id_expedicion     Int
+  fecha_inscripcion DateTime
+  estado            String
+  reserva_pagada    Boolean
+  saldo_pagado      Boolean
+
+  dni                 String?
+  fecha_nacimiento    DateTime?
+  telefono            String?
+  provincia           String?
+  emergencia_nombre   String?
+  emergencia_telefono String?
+
+  clientes                     clientes                      @relation(fields: [id_cliente], references: [id_cliente])
+  expediciones                 expediciones                  @relation(fields: [id_expedicion], references: [id_expedicion])
+  pagos                        pagos[]
+  inscripcion_datos_medicos    inscripcion_datos_medicos?
+  inscripcion_actividad_fisica inscripcion_actividad_fisica?
+  inscripcion_token            inscripcion_tokens?
+}
+
+model inscripcion_datos_medicos {
+  id_dato_medico     Int     @id @default(autoincrement())
+  id_inscripcion     Int     @unique
+  cobertura_medica   String?
+  grupo_sanguineo    String?
+  alergias           Boolean @default(false)
+  alergias_detalle   String?
+  diabetes           Boolean @default(false)
+  asma               Boolean @default(false)
+  hipertension       Boolean @default(false)
+  otros_antecedentes String?
+
+  inscripciones inscripciones @relation(fields: [id_inscripcion], references: [id_inscripcion], onDelete: Cascade)
+}
+
+model inscripcion_actividad_fisica {
+  id_actividad_fisica   Int     @id @default(autoincrement())
+  id_inscripcion        Int     @unique
+  realiza_entrenamiento Boolean @default(false)
+  tipo_entrenamiento    String?
+  frecuencia_semanal    Int?
+  experiencia_trekking  Boolean @default(false)
+  altura_cm             Int?
+  peso_kg               Int?
+
+  inscripciones inscripciones @relation(fields: [id_inscripcion], references: [id_inscripcion], onDelete: Cascade)
+}
+
+model pagos {
+  id_pago        Int      @id @default(autoincrement())
+  id_inscripcion Int
+  monto          Decimal
+  moneda         String
+  tipo           String
+  metodo_pago    String
+  estado         String
+  fecha_pago     DateTime
+
+  inscripciones inscripciones @relation(fields: [id_inscripcion], references: [id_inscripcion])
+}
+
+model coordinadores {
+  id_coordinador   Int     @id @default(autoincrement())
+  nombre           String
+  apellido         String
+  dni              String   @unique
+  certificaciones  String[]
+  especialidades   String[]
+  activo           Boolean
+
+  expedicion_coordinadores expedicion_coordinadores[]
+}
+
+model expedicion_coordinadores {
+  id             Int @id @default(autoincrement())
+  id_expedicion  Int
+  id_coordinador Int
+  rol            String
+
+  expediciones expediciones @relation(fields: [id_expedicion], references: [id_expedicion])
+  coordinadores coordinadores @relation(fields: [id_coordinador], references: [id_coordinador])
+}
+
+model inscripcion_tokens {
+  id             Int      @id @default(autoincrement())
+  token          String   @unique
+  id_expedicion  Int
+  id_cliente     Int
+  expires_at     DateTime
+  usado          Boolean  @default(false)
+  created_at     DateTime @default(now())
+  id_inscripcion Int?     @unique
+
+  expediciones  expediciones  @relation(fields: [id_expedicion], references: [id_expedicion])
+  clientes      clientes      @relation(fields: [id_cliente], references: [id_cliente])
+  inscripciones inscripciones? @relation(fields: [id_inscripcion], references: [id_inscripcion])
+}
