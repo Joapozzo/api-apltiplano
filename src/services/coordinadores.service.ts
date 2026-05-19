@@ -1,4 +1,5 @@
 import { prisma } from "../database/prisma.js";
+import { storageAdapter } from "../uploads/adapters/index.js";
 import type { ApiSuccessResponse } from "../types/api.types.js";
 
 export interface CreateCoordinadorData {
@@ -31,11 +32,14 @@ const selectCoordinador = {
   certificaciones: true,
   especialidades: true,
   activo: true,
+  url_foto: true,
+  foto_public_id: true,
 };
 
 const selectCoordinadorWithExpediciones = {
   ...selectCoordinador,
   expedicion_coordinadores: {
+    orderBy: { expediciones: { fecha_salida: "desc" as const } },
     select: {
       id: true,
       rol: true,
@@ -52,7 +56,6 @@ const selectCoordinadorWithExpediciones = {
             },
           },
         },
-        orderBy: { fecha_salida: "desc" },
       },
     },
   },
@@ -126,6 +129,7 @@ export class CoordinadoresService {
         certificaciones: coordinador.certificaciones,
         especialidades: coordinador.especialidades,
         activo: coordinador.activo,
+        url_foto: coordinador.url_foto,
         historial,
         total_expediciones: historial.length,
       },
@@ -199,15 +203,24 @@ export class CoordinadoresService {
   static async delete(id: number) {
     const exists = await prisma.coordinadores.findUnique({
       where: { id_coordinador: id },
+      select: { id_coordinador: true, foto_public_id: true },
     });
 
     if (!exists) {
       throw new Error("Coordinador no encontrado");
     }
 
+    if (exists.foto_public_id) {
+      try {
+        await storageAdapter.delete(exists.foto_public_id);
+      } catch {
+        // Si falla Cloudinary, igual desactivamos el guía
+      }
+    }
+
     await prisma.coordinadores.update({
       where: { id_coordinador: id },
-      data: { activo: false },
+      data: { activo: false, url_foto: null, foto_public_id: null },
     });
 
     return {
@@ -305,7 +318,7 @@ export class CoordinadoresService {
               },
             },
           },
-          orderBy: { expediciones: { fecha_salida: "desc" } },
+          orderBy: { expediciones: { fecha_salida: "desc" as const } },
         },
       },
     });

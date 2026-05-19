@@ -1,5 +1,6 @@
 import { prisma } from "../database/prisma.js";
 import type { ApiSuccessResponse, ApiPaginatedResponse } from "../types/api.types.js";
+import { assertCatalogoActivo } from "../utils/catalog-referential.js";
 
 export interface ServicioFilters {
   activo?: boolean;
@@ -148,6 +149,12 @@ export class ServiciosService {
    * Crear nuevo servicio
    */
   static async create(data: any) {
+    await Promise.all([
+      assertCatalogoActivo("lugares", data.id_lugar),
+      assertCatalogoActivo("actividades", data.id_actividad),
+      assertCatalogoActivo("dificultades", data.id_dificultad),
+    ]);
+
     const servicio = await prisma.servicios.create({
       data: {
         nombre: data.nombre,

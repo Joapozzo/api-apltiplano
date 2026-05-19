@@ -2,6 +2,17 @@ import type { NextFunction, Request, Response } from "express";
 import { rateLimit, type ClientRateLimitInfo, type Store } from "express-rate-limit";
 import { AppError } from "../../utils/app-error.js";
 import type { RateLimitConfig } from "../types/upload.types.js";
+import { getUploadMaxPorMes } from "../../utils/config-runtime.js";
+
+let uploadMaxPorMes = 50;
+
+getUploadMaxPorMes()
+  .then((val) => { uploadMaxPorMes = val; })
+  .catch(() => {});
+
+export async function refreshUploadLimit() {
+  uploadMaxPorMes = await getUploadMaxPorMes();
+}
 
 type UploadCounterRecord = {
   totalHits: number;
@@ -78,7 +89,7 @@ class MonthlyUploadMemoryStore implements Store {
 }
 
 const rateLimitConfig: RateLimitConfig = {
-  max_por_mes: Math.max(1, Number.parseInt(process.env.UPLOAD_MAX_POR_MES ?? "50", 10) || 50),
+  max_por_mes: uploadMaxPorMes,
 };
 
 const deleteRateLimitConfig = {

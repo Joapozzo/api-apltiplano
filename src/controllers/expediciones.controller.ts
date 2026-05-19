@@ -12,6 +12,7 @@ export class ExpedicionesController {
           : undefined,
         fecha_desde: req.query.fecha_desde as string | undefined,
         fecha_hasta: req.query.fecha_hasta as string | undefined,
+        search: req.query.search as string | undefined,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 50,
       };

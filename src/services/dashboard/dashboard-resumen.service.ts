@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../database/prisma.js";
+import { getMonedaDefault } from "../../utils/config-runtime.js";
 
 export interface DashboardFiltros {
   fecha_desde?: Date;
@@ -127,6 +128,8 @@ export async function getDashboardResumen(
   const porcentajeOcupacion =
     cuposTotales > 0 ? Number(((cuposOcupados / cuposTotales) * 100).toFixed(2)) : 0;
 
+  const moneda = await getMonedaDefault();
+
   return {
     resumen: {
       expediciones_activas: expedicionesActivas.length,
@@ -135,7 +138,7 @@ export async function getDashboardResumen(
       porcentaje_ocupacion: porcentajeOcupacion,
       inscripciones_periodo: inscripcionesPeriodo,
       ingresos_estimados: pagosPeriodo._sum.monto ?? new Prisma.Decimal(0),
-      moneda: "ARS",
+      moneda,
     },
     expediciones_proximas: expedicionesProximas.map((expedicion) => ({
       id_expedicion: expedicion.id_expedicion,

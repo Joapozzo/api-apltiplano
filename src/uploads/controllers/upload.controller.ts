@@ -68,6 +68,66 @@ export class UploadController {
     }
   }
 
+  static async subirFotoCoordinador(req: Request, res: Response, next: NextFunction) {
+    try {
+      const idCoordinador = Number.parseInt(req.params.id_coordinador ?? "", 10);
+
+      if (!Number.isInteger(idCoordinador)) {
+        throw new AppError("ID de coordinador inválido", 400);
+      }
+
+      if (!req.fileBuffer || !req.fileMimetype) {
+        throw new AppError("No se recibió una imagen procesada", 400);
+      }
+
+      const result = await UploadService.subirFotoCoordinador({
+        id_coordinador: idCoordinador,
+        buffer: req.fileBuffer,
+        mimetype: req.fileMimetype,
+      });
+
+      res.status(201).json({
+        url: result.url,
+        public_id: result.public_id,
+        width: result.width,
+        height: result.height,
+        bytes: result.bytes,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async eliminarFotoCoordinador(req: Request, res: Response, next: NextFunction) {
+    try {
+      const idCoordinador = Number.parseInt(req.params.id_coordinador ?? "", 10);
+
+      if (!Number.isInteger(idCoordinador)) {
+        throw new AppError("ID de coordinador inválido", 400);
+      }
+
+      await UploadService.eliminarFotoCoordinador(idCoordinador);
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getFotoCoordinador(req: Request, res: Response, next: NextFunction) {
+    try {
+      const idCoordinador = Number.parseInt(req.params.id_coordinador ?? "", 10);
+
+      if (!Number.isInteger(idCoordinador)) {
+        throw new AppError("ID de coordinador inválido", 400);
+      }
+
+      const foto = await UploadService.getFotoCoordinador(idCoordinador);
+      res.json(foto);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getImagenesServicio(req: Request, res: Response, next: NextFunction) {
     try {
       const idServicio = Number.parseInt(req.params.id_servicio ?? "", 10);

@@ -27,6 +27,16 @@ export interface SubirImagenDTO {
   public_id?: string;
 }
 
+export interface SubirFotoCoordinadorDTO {
+  id_coordinador: number;
+  buffer: Buffer;
+  mimetype: string;
+}
+
+export interface EliminarFotoCoordinadorOptions {
+  skipNotFound?: boolean;
+}
+
 export interface RateLimitConfig {
   max_por_mes: number;
 }

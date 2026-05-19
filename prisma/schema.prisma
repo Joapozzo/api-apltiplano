@@ -12,34 +12,46 @@ model ubicaciones {
   pais         String
   provincia    String
   zona         String
+  activo       Boolean @default(true)
+  orden        Int     @default(0)
 
   lugares lugares[]
+
+  @@unique([pais, provincia, zona])
 }
 
 model lugares {
-  id_lugar     Int    @id @default(autoincrement())
+  id_lugar     Int     @id @default(autoincrement())
   nombre       String
   tipo_lugar   String
-  altitud      Int
+  altitud      Int     @default(0)
   descripcion  String?
   id_ubicacion Int
+  activo       Boolean @default(true)
+  orden        Int     @default(0)
 
   ubicaciones ubicaciones @relation(fields: [id_ubicacion], references: [id_ubicacion])
   servicios   servicios[]
+
+  @@unique([id_ubicacion, nombre])
 }
 
 model actividades {
-  id_actividad Int    @id @default(autoincrement())
-  nombre       String
+  id_actividad Int     @id @default(autoincrement())
+  nombre       String  @unique
   descripcion  String?
+  activo       Boolean @default(true)
+  orden        Int     @default(0)
 
   servicios servicios[]
 }
 
 model dificultades {
-  id_dificultad Int    @id @default(autoincrement())
-  nivel         String
+  id_dificultad Int     @id @default(autoincrement())
+  nivel         String  @unique
   descripcion   String?
+  activo        Boolean @default(true)
+  orden         Int     @default(0)
 
   servicios servicios[]
 }
@@ -291,6 +303,8 @@ model coordinadores {
   certificaciones  String[]
   especialidades   String[]
   activo           Boolean
+  url_foto         String?
+  foto_public_id   String?
 
   expedicion_coordinadores expedicion_coordinadores[]
 }
@@ -318,4 +332,34 @@ model inscripcion_tokens {
   expediciones  expediciones  @relation(fields: [id_expedicion], references: [id_expedicion])
   clientes      clientes      @relation(fields: [id_cliente], references: [id_cliente])
   inscripciones inscripciones? @relation(fields: [id_inscripcion], references: [id_inscripcion])
+}
+
+model configuracion_sistema {
+  clave                 String   @id
+  valor                 String
+  tipo                  String
+  grupo                 String
+  etiqueta              String
+  descripcion           String?
+  editable              Boolean  @default(true)
+  fecha_actualizacion   DateTime @updatedAt
+}
+
+model notificaciones_admin {
+  id_notificacion   Int       @id @default(autoincrement())
+  tipo              String
+  severidad         String
+  titulo            String
+  mensaje           String
+  enlace            String?
+  metadata          Json?
+  dedupe_key        String    @unique
+  leida             Boolean   @default(false)
+  leida_at          DateTime?
+  archivada         Boolean   @default(false)
+  created_at        DateTime  @default(now())
+  expires_at        DateTime?
+
+  @@index([leida, created_at])
+  @@index([tipo, created_at])
 }

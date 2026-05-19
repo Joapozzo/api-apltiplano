@@ -22,6 +22,7 @@ const SENSITIVE_PATHS = [
   "/api/expediciones",
   "/api/servicios",
   "/api/catalogos",
+  "/api/admin/notificaciones",
 ];
 
 const SENSITIVE_ACTIONS = ["create", "update", "delete", "patch"];
