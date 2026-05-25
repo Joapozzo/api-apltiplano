@@ -86,6 +86,7 @@ BEGIN
     IF v_id_servicio IS NULL THEN
         INSERT INTO servicios (
             nombre,
+            slug,
             id_lugar,
             id_actividad,
             id_dificultad,
@@ -122,6 +123,7 @@ BEGIN
         )
         VALUES (
             'Cerro Champaquí',
+            'champaqui',
             v_id_lugar,
             v_id_actividad,
             v_id_dificultad,
@@ -160,6 +162,7 @@ BEGIN
     ELSE
         -- Si el servicio ya existe, actualizar sus datos y eliminar itinerarios/expediciones antiguas para recrearlos
         UPDATE servicios SET
+            slug = 'champaqui',
             id_lugar = v_id_lugar,
             id_actividad = v_id_actividad,
             id_dificultad = v_id_dificultad,

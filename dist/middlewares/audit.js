@@ -5,6 +5,7 @@ const SENSITIVE_PATHS = [
     "/api/expediciones",
     "/api/servicios",
     "/api/catalogos",
+    "/api/admin/notificaciones",
 ];
 const SENSITIVE_ACTIONS = ["create", "update", "delete", "patch"];
 export function auditMiddleware(req, res, next) {
@@ -51,8 +52,9 @@ function extractResourceType(path) {
 function extractResourceId(params) {
     const idFields = ["id", "id_usuario", "id_expedicion", "id_servicio", "id_cliente", "id_inscripcion"];
     for (const field of idFields) {
-        if (params[field]) {
-            return params[field];
+        const value = params[field];
+        if (value && typeof value === "string") {
+            return value;
         }
     }
     return undefined;

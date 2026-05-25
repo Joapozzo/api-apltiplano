@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { AuthService, AuthServiceError } from "../services/auth.service.js";
 import { extractBearerToken } from "../utils/auth-header.js";
-import { generateCsrfToken } from "../middlewares/csrf.js";
+import { issueCsrfToken } from "../middlewares/csrf.js";
 
 const registerSchema = z.object({
   nombre: z.string().trim().optional(),
@@ -10,21 +10,13 @@ const registerSchema = z.object({
   username: z.string().trim().min(1).optional(),
 });
 
-function setCsrfCookie(res: Response) {
-  const csrfToken = generateCsrfToken();
-  const isProduction = process.env.NODE_ENV === "production";
-  
-  res.cookie("csrf_token", csrfToken, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: "strict",
-    maxAge: 24 * 60 * 60 * 1000, // 24 horas
-  });
-  
-  return csrfToken;
-}
-
 export class AuthController {
+  /** Bootstrap CSRF (cookie + token) sin requerir sesión Firebase. */
+  static async csrf(req: Request, res: Response) {
+    const csrfToken = issueCsrfToken(req, res);
+    return res.json({ success: true, csrfToken });
+  }
+
   static async register(req: Request, res: Response) {
     try {
       const token = extractBearerToken(req.header("authorization"));
@@ -43,7 +35,7 @@ export class AuthController {
         ...(payload.username ? { username: payload.username } : {}),
       });
 
-      const csrfToken = setCsrfCookie(res);
+      const csrfToken = issueCsrfToken(req, res);
       
       return res.status(result.message.includes("registrado") ? 201 : 200).json({
         ...result,
@@ -86,7 +78,7 @@ export class AuthController {
 
       const result = await AuthService.getCurrentUser(token);
       
-      const csrfToken = setCsrfCookie(res);
+      const csrfToken = issueCsrfToken(req, res);
       
       return res.json({
         ...result,

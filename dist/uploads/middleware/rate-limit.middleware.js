@@ -1,5 +1,13 @@
 import { rateLimit } from "express-rate-limit";
 import { AppError } from "../../utils/app-error.js";
+import { getUploadMaxPorMes } from "../../utils/config-runtime.js";
+let uploadMaxPorMes = 50;
+getUploadMaxPorMes()
+    .then((val) => { uploadMaxPorMes = val; })
+    .catch(() => { });
+export async function refreshUploadLimit() {
+    uploadMaxPorMes = await getUploadMaxPorMes();
+}
 function getCurrentMonthKeySuffix() {
     const now = new Date();
     return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
@@ -55,7 +63,7 @@ class MonthlyUploadMemoryStore {
     }
 }
 const rateLimitConfig = {
-    max_por_mes: Math.max(1, Number.parseInt(process.env.UPLOAD_MAX_POR_MES ?? "50", 10) || 50),
+    max_por_mes: uploadMaxPorMes,
 };
 const deleteRateLimitConfig = {
     max_por_minuto: 10,

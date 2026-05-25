@@ -1,14 +1,18 @@
-import type { AuthenticatedRequestUser } from "./auth.types.js";
+import "express";
+import type { AppRole } from "./auth.types.js";
 
-declare global {
-  namespace Express {
-    interface Request {
-      auth?: AuthenticatedRequestUser;
-      fileBuffer?: Buffer;
-      fileMimetype?: string;
-      cookies?: Record<string, string>;
-    }
+declare module "express" {
+  interface Request {
+    auth?: {
+      id_usuario: number;
+      firebase_uid: string;
+      email: string;
+      nombre: string;
+      apellido: string;
+      activo: boolean;
+      roles: AppRole[];
+    };
+    fileBuffer?: Buffer;
+    fileMimetype?: string;
   }
 }
-
-export {};

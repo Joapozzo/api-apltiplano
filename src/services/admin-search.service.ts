@@ -1,4 +1,5 @@
 import { prisma } from "../database/prisma.js";
+import { decryptClientePii } from "../utils/data-protection.js";
 
 export type AdminSearchResultType = "cliente" | "servicio" | "salida";
 
@@ -55,12 +56,15 @@ export class AdminSearchService {
       orderBy: { id_usuario: "desc" },
     });
 
-    return clientes.map((c) => ({
-      type: "cliente" as const,
-      id: c.id_usuario,
-      title: `${c.nombre} ${c.apellido}`.trim(),
-      subtitle: c.email,
-    }));
+    return clientes.map((c) => {
+      const decrypted = decryptClientePii(c);
+      return {
+        type: "cliente" as const,
+        id: c.id_usuario,
+        title: `${decrypted.nombre} ${decrypted.apellido}`.trim(),
+        subtitle: decrypted.email as string,
+      };
+    });
   }
 
   private static async searchServicios(q: string, limit: number): Promise<AdminSearchHit[]> {

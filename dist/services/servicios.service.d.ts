@@ -16,27 +16,35 @@ export declare class ServiciosService {
     static getAll(filters?: ServicioFilters): Promise<ApiPaginatedResponse<{
         lugares: {
             ubicaciones: {
+                activo: boolean;
                 provincia: string;
                 id_ubicacion: number;
+                orden: number;
                 pais: string;
                 zona: string;
             };
         } & {
             nombre: string;
+            activo: boolean;
+            descripcion: string | null;
             id_lugar: number;
+            id_ubicacion: number;
+            orden: number;
             tipo_lugar: string;
             altitud: number;
-            descripcion: string | null;
-            id_ubicacion: number;
         };
         actividades: {
             nombre: string;
-            id_actividad: number;
+            activo: boolean;
             descripcion: string | null;
+            id_actividad: number;
+            orden: number;
         };
         dificultades: {
-            id_dificultad: number;
+            activo: boolean;
             descripcion: string | null;
+            id_dificultad: number;
+            orden: number;
             nivel: string;
         };
     } & {
@@ -89,38 +97,46 @@ export declare class ServiciosService {
     static getById(id: number): Promise<ApiSuccessResponse<{
         lugares: {
             ubicaciones: {
+                activo: boolean;
                 provincia: string;
                 id_ubicacion: number;
+                orden: number;
                 pais: string;
                 zona: string;
             };
         } & {
             nombre: string;
+            activo: boolean;
+            descripcion: string | null;
             id_lugar: number;
+            id_ubicacion: number;
+            orden: number;
             tipo_lugar: string;
             altitud: number;
-            descripcion: string | null;
-            id_ubicacion: number;
         };
         actividades: {
             nombre: string;
-            id_actividad: number;
+            activo: boolean;
             descripcion: string | null;
+            id_actividad: number;
+            orden: number;
         };
         dificultades: {
-            id_dificultad: number;
+            activo: boolean;
             descripcion: string | null;
+            id_dificultad: number;
+            orden: number;
             nivel: string;
         };
         itinerarios: {
             id_servicio: number;
+            descripcion: string | null;
+            titulo: string;
             peso_mochila: string | null;
             altitud: number | null;
-            descripcion: string | null;
             dia: number;
             id_itinerario: number;
             total_dias: number | null;
-            titulo: string;
             hora_inicio: string | null;
             hora_fin: string | null;
             distancia_km: number | null;
@@ -192,20 +208,26 @@ export declare class ServiciosService {
     static create(data: any): Promise<ApiSuccessResponse<{
         lugares: {
             nombre: string;
+            activo: boolean;
+            descripcion: string | null;
             id_lugar: number;
+            id_ubicacion: number;
+            orden: number;
             tipo_lugar: string;
             altitud: number;
-            descripcion: string | null;
-            id_ubicacion: number;
         };
         actividades: {
             nombre: string;
-            id_actividad: number;
+            activo: boolean;
             descripcion: string | null;
+            id_actividad: number;
+            orden: number;
         };
         dificultades: {
-            id_dificultad: number;
+            activo: boolean;
             descripcion: string | null;
+            id_dificultad: number;
+            orden: number;
             nivel: string;
         };
     } & {
@@ -258,20 +280,26 @@ export declare class ServiciosService {
     static update(id: number, data: any): Promise<ApiSuccessResponse<{
         lugares: {
             nombre: string;
+            activo: boolean;
+            descripcion: string | null;
             id_lugar: number;
+            id_ubicacion: number;
+            orden: number;
             tipo_lugar: string;
             altitud: number;
-            descripcion: string | null;
-            id_ubicacion: number;
         };
         actividades: {
             nombre: string;
-            id_actividad: number;
+            activo: boolean;
             descripcion: string | null;
+            id_actividad: number;
+            orden: number;
         };
         dificultades: {
-            id_dificultad: number;
+            activo: boolean;
             descripcion: string | null;
+            id_dificultad: number;
+            orden: number;
             nivel: string;
         };
     } & {

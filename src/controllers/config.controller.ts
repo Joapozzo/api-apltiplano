@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { ConfigService, ConfigServiceError } from "../services/config.service.js";
 import type { ApiSuccessResponse, ApiErrorResponse } from "../types/api.types.js";
+import { parseParamId } from "../utils/express-helpers.js";
 
 const patchSingleSchema = z.object({
   valor: z.union([z.string(), z.number(), z.boolean()]).transform(String),
@@ -58,7 +59,7 @@ export class ConfigController {
 
   static async getByClave(req: Request, res: Response) {
     try {
-      const clave = req.params.clave;
+      const clave = parseParamId(req.params.clave);
       if (!clave) {
         return res.status(400).json({ success: false, error: "Clave requerida" });
       }
@@ -83,7 +84,7 @@ export class ConfigController {
 
   static async set(req: Request, res: Response) {
     try {
-      const clave = req.params.clave;
+      const clave = parseParamId(req.params.clave);
       if (!clave) {
         return res.status(400).json({ success: false, error: "Clave requerida" });
       }

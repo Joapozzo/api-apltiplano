@@ -1,7 +1,12 @@
 import { prisma } from "../database/prisma.js";
 import { JWTService } from "./jwt.service.js";
+import { getInscripcionEstadoInicial, getInscripcionTokenDias } from "../utils/config-runtime.js";
+import { emitInscripcionNueva } from "./notificaciones/notificaciones-emit.service.js";
+import { syncAlertasOperativas } from "./notificaciones/notificaciones-sync.service.js";
+import { EmailService } from "./email.service.js";
 export class InscripcionesService {
-    static async generateLink(id_expedicion, id_cliente, expiresInDays = 7) {
+    static async generateLink(id_expedicion, id_cliente, expiresInDays) {
+        const diasToken = expiresInDays ?? await getInscripcionTokenDias();
         const [expedicion, cliente] = await Promise.all([
             prisma.expediciones.findFirst({
                 where: { id_expedicion },
@@ -19,9 +24,9 @@ export class InscripcionesService {
         if (!cliente) {
             throw new Error("Cliente no encontrado");
         }
-        const token = JWTService.generateToken(id_expedicion, id_cliente, expiresInDays);
+        const token = JWTService.generateToken(id_expedicion, id_cliente, diasToken);
         const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+        expiresAt.setDate(expiresAt.getDate() + diasToken);
         await prisma.inscripcion_tokens.create({
             data: {
                 token,
@@ -116,13 +121,14 @@ export class InscripcionesService {
         const fnac = typeof data.usuario.fecha_nacimiento === "string"
             ? new Date(data.usuario.fecha_nacimiento)
             : data.usuario.fecha_nacimiento;
-        return await prisma.$transaction(async (tx) => {
+        const estadoInicial = await getInscripcionEstadoInicial();
+        const result = await prisma.$transaction(async (tx) => {
             const inscripcion = await tx.inscripciones.create({
                 data: {
                     id_cliente,
                     id_expedicion: expedicion.id_expedicion,
                     fecha_inscripcion: new Date(),
-                    estado: "Inscripto",
+                    estado: estadoInicial,
                     reserva_pagada: false,
                     saldo_pagado: false,
                     dni: data.usuario.dni,
@@ -184,12 +190,45 @@ export class InscripcionesService {
                 where: { token: data.token },
                 data: { usado: true, id_inscripcion: inscripcion.id_inscripcion },
             });
-            return {
-                success: true,
-                inscripcion_id: inscripcion.id_inscripcion,
-                mensaje: "Inscripción realizada exitosamente",
-            };
+            return { success: true, inscripcion_id: inscripcion.id_inscripcion, mensaje: "Inscripción realizada exitosamente", expedicion, cliente: validation.cliente };
         });
+        const emitResult = result;
+        if (emitResult.success) {
+            await emitInscripcionNueva({
+                id_inscripcion: emitResult.inscripcion_id,
+                cliente: `${emitResult.cliente.nombre} ${emitResult.cliente.apellido}`,
+                servicio: emitResult.expedicion.servicios.nombre,
+                fecha_salida: emitResult.expedicion.fecha_salida,
+            });
+            await syncAlertasOperativas(false);
+            const expedicionData = emitResult.expedicion;
+            await EmailService.sendInscripcionConfirmacion({
+                cliente: {
+                    nombre: emitResult.cliente.nombre,
+                    apellido: emitResult.cliente.apellido,
+                    email: emitResult.cliente.email,
+                },
+                servicio: {
+                    nombre: expedicionData.servicios.nombre,
+                    slug: expedicionData.servicios.slug || "",
+                },
+                expedicion: {
+                    fecha_salida: expedicionData.fecha_salida.toISOString(),
+                    fecha_fin: expedicionData.fecha_fin.toISOString(),
+                },
+                inscripcion: {
+                    id: emitResult.inscripcion_id,
+                    estado: "Inscripto",
+                },
+            }).catch((err) => {
+                console.error("Error enviando email de confirmación:", err);
+            });
+        }
+        return {
+            success: true,
+            inscripcion_id: emitResult.inscripcion_id,
+            mensaje: "Inscripción realizada exitosamente",
+        };
     }
     static async listInscripciones(filters) {
         const page = filters.page || 1;

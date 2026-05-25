@@ -1,4 +1,5 @@
 import { prisma } from "../database/prisma.js";
+import { assertCatalogoActivo } from "../utils/catalog-referential.js";
 export class ServiciosService {
     /**
      * Obtener todos los servicios con filtros opcionales
@@ -120,6 +121,11 @@ export class ServiciosService {
      * Crear nuevo servicio
      */
     static async create(data) {
+        await Promise.all([
+            assertCatalogoActivo("lugares", data.id_lugar),
+            assertCatalogoActivo("actividades", data.id_actividad),
+            assertCatalogoActivo("dificultades", data.id_dificultad),
+        ]);
         const servicio = await prisma.servicios.create({
             data: {
                 nombre: data.nombre,

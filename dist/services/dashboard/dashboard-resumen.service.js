@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../database/prisma.js";
+import { getMonedaDefault } from "../../utils/config-runtime.js";
 const ESTADOS_EXPEDICIONES_ACTIVAS = ["confirmada", "en_proceso"];
 export async function getDashboardResumen(filtros) {
     const fechaDesde = filtros.fecha_desde ?? new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -79,6 +80,7 @@ export async function getDashboardResumen(filtros) {
     const cuposTotales = expedicionesActivas.reduce((total, expedicion) => total + expedicion.cupos_disponibles, 0);
     const cuposOcupados = expedicionesActivas.reduce((total, expedicion) => total + expedicion.cupos_ocupados, 0);
     const porcentajeOcupacion = cuposTotales > 0 ? Number(((cuposOcupados / cuposTotales) * 100).toFixed(2)) : 0;
+    const moneda = await getMonedaDefault();
     return {
         resumen: {
             expediciones_activas: expedicionesActivas.length,
@@ -87,7 +89,7 @@ export async function getDashboardResumen(filtros) {
             porcentaje_ocupacion: porcentajeOcupacion,
             inscripciones_periodo: inscripcionesPeriodo,
             ingresos_estimados: pagosPeriodo._sum.monto ?? new Prisma.Decimal(0),
-            moneda: "ARS",
+            moneda,
         },
         expediciones_proximas: expedicionesProximas.map((expedicion) => ({
             id_expedicion: expedicion.id_expedicion,

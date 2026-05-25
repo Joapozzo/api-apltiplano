@@ -17,6 +17,7 @@ import {
   normalizeServicioPublic,
 } from "../utils/public-serializers.js";
 import { sortSalidaPares } from "../utils/public-sort.js";
+import { findServicioActivoPorSlugIdentificador } from "../utils/find-servicio-public.js";
 
 function startOfTodayLocal(): Date {
   const now = new Date();
@@ -213,9 +214,7 @@ export class PublicSalidasService {
   }
 
   private static async getDetallePorSlugServicio(slug: string, idExpedicionOpcional?: number) {
-    const servicioRow = await prisma.servicios.findFirst({
-      where: { slug, activo: true },
-    });
+    const servicioRow = await findServicioActivoPorSlugIdentificador(slug);
 
     if (!servicioRow) {
       throw new Error("Salida no encontrada");

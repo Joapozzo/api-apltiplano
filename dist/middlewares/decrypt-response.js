@@ -1,4 +1,3 @@
-import { decryptFields, SensitiveFields } from "../utils/encryption.js";
 const PUBLIC_PATHS = ["/api/servicios", "/api/salidas", "/api/user/servicios", "/api/user/salidas"];
 const SENSITIVE_RESPONSE_FIELDS = {
     "usuarios.email": ["email"],

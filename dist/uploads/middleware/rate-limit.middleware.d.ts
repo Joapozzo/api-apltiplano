@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+export declare function refreshUploadLimit(): Promise<void>;
 export declare function getRateLimitInfo(id_usuario: number): Promise<{
     max_por_mes: number;
     usadas: number;

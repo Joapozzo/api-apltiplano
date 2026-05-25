@@ -1,4 +1,7 @@
 import { prisma } from "../database/prisma.js";
+import { getExpedicionEstadoInicial, getPresupuestoDiasValidez } from "../utils/config-runtime.js";
+import { emitSalidaEstadoCompleta } from "./notificaciones/notificaciones-emit.service.js";
+import { syncAlertasOperativas } from "./notificaciones/notificaciones-sync.service.js";
 export class ExpedicionesService {
     /**
      * Validar si una expedición tiene cupos disponibles
@@ -67,6 +70,18 @@ export class ExpedicionesService {
             if (filters.fecha_hasta) {
                 where.fecha_salida.lte = new Date(filters.fecha_hasta);
             }
+        }
+        if (filters.search) {
+            const searchNum = parseInt(filters.search, 10);
+            where.OR = [];
+            if (!isNaN(searchNum)) {
+                where.OR.push({ id_expedicion: searchNum });
+            }
+            where.OR.push({
+                servicios: {
+                    nombre: { contains: filters.search, mode: "insensitive" },
+                },
+            });
         }
         const [expediciones, total] = await Promise.all([
             prisma.expediciones.findMany({
@@ -195,6 +210,19 @@ export class ExpedicionesService {
         if (!data.precios || data.precios.length === 0) {
             throw new Error("Debe agregar al menos un precio");
         }
+        const [estadoInicial, diasValidez] = await Promise.all([
+            getExpedicionEstadoInicial(),
+            getPresupuestoDiasValidez(),
+        ]);
+        let presupuestoHasta = null;
+        if (data.presupuesto_valido_hasta) {
+            presupuestoHasta = new Date(data.presupuesto_valido_hasta);
+        }
+        else {
+            const validezDate = new Date(fechaSalida);
+            validezDate.setDate(validezDate.getDate() + diasValidez);
+            presupuestoHasta = validezDate;
+        }
         // Crear expedición con precios
         const expedicion = await prisma.expediciones.create({
             data: {
@@ -203,10 +231,8 @@ export class ExpedicionesService {
                 fecha_fin: fechaFin,
                 cupos_disponibles: data.cupos_disponibles,
                 cupos_ocupados: 0,
-                estado: data.estado || "Activa",
-                presupuesto_valido_hasta: data.presupuesto_valido_hasta
-                    ? new Date(data.presupuesto_valido_hasta)
-                    : null,
+                estado: data.estado || estadoInicial,
+                presupuesto_valido_hasta: presupuestoHasta,
                 expedicion_precios: {
                     create: data.precios.map((p) => ({
                         nombre_paquete: p.nombre_paquete,
@@ -379,7 +405,19 @@ export class ExpedicionesService {
                 where: { id_expedicion },
                 data: { estado: "Completa" },
             });
+            const expedicionCompleta = await prisma.expediciones.findUnique({
+                where: { id_expedicion },
+                include: { servicios: true },
+            });
+            if (expedicionCompleta) {
+                await emitSalidaEstadoCompleta({
+                    id_expedicion,
+                    nombre_servicio: expedicionCompleta.servicios.nombre,
+                    fecha_salida: expedicionCompleta.fecha_salida,
+                });
+            }
         }
+        await syncAlertasOperativas(false);
         return expedicion;
     }
 }

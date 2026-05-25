@@ -1,143 +1,80 @@
 import { prisma } from "../../database/prisma.js";
+import { syncAlertasOperativas } from "../notificaciones/notificaciones-sync.service.js";
 export async function getDashboardAlertas() {
+    await syncAlertasOperativas(true);
+    const notificaciones = await prisma.notificaciones_admin.findMany({
+        where: {
+            archivada: false,
+            leida: false,
+        },
+        orderBy: { created_at: "desc" },
+    });
+    const cuposCriticos = notificaciones.filter((n) => n.tipo === "SALIDA_CUPOS_CRITICOS");
+    const sinDatosMedicos = notificaciones.filter((n) => n.tipo === "INSCRIPCION_SIN_DATOS_MEDICOS");
+    const presupuestos = notificaciones.filter((n) => n.tipo === "SALIDA_PRESUPUESTO_POR_VENCER" || n.tipo === "SALIDA_PRESUPUESTO_VENCIDO");
+    const expedicionesCuposCriticos = cuposCriticos.map((n) => {
+        const meta = n.metadata;
+        return {
+            id_expedicion: meta?.id_expedicion || 0,
+            nombre_servicio: n.mensaje,
+            fecha_salida: n.created_at,
+            cupos_disponibles: 0,
+        };
+    });
+    const inscripcionesSinDatosMedicos = sinDatosMedicos.map((n) => {
+        const meta = n.metadata;
+        return {
+            id_inscripcion: meta?.id_inscripcion || 0,
+            cliente: {
+                nombre: n.mensaje.split(" — ")[0] || "",
+                apellido: "",
+            },
+            expedicion: {
+                nombre_servicio: "",
+            },
+        };
+    });
+    const presupuestosPorVencer = presupuestos.map((n) => {
+        const meta = n.metadata;
+        return {
+            id_expedicion: meta?.id_expedicion || 0,
+            nombre_servicio: n.mensaje.split(" — ")[0] || "",
+            presupuesto_valido_hasta: n.created_at,
+        };
+    });
     const hoy = new Date();
-    const proximaSemana = new Date(hoy);
-    proximaSemana.setDate(proximaSemana.getDate() + 7);
-    const [expedicionesCuposCriticos, tokensVencidosSinUsar, inscripcionesSinDatosMedicos, presupuestosPorVencer,] = await Promise.all([
-        prisma.expediciones.findMany({
-            where: {
-                cupos_disponibles: {
-                    lte: 2,
+    const tokensVencidosSinUsar = await prisma.inscripcion_tokens.findMany({
+        where: {
+            expires_at: { lt: hoy },
+            usado: false,
+        },
+        select: {
+            id: true,
+            expires_at: true,
+            clientes: {
+                select: { nombre: true, apellido: true },
+            },
+            expediciones: {
+                select: {
+                    servicios: { select: { nombre: true } },
+                    fecha_salida: true,
                 },
             },
-            select: {
-                id_expedicion: true,
-                fecha_salida: true,
-                cupos_disponibles: true,
-                servicios: {
-                    select: {
-                        nombre: true,
-                    },
-                },
-            },
-            orderBy: {
-                fecha_salida: "asc",
-            },
-        }),
-        prisma.inscripcion_tokens.findMany({
-            where: {
-                expires_at: {
-                    lt: hoy,
-                },
-                usado: false,
-            },
-            select: {
-                id: true,
-                expires_at: true,
-                clientes: {
-                    select: {
-                        nombre: true,
-                        apellido: true,
-                    },
-                },
-                expediciones: {
-                    select: {
-                        fecha_salida: true,
-                        servicios: {
-                            select: {
-                                nombre: true,
-                            },
-                        },
-                    },
-                },
-            },
-            orderBy: {
-                expires_at: "asc",
-            },
-        }),
-        prisma.inscripciones.findMany({
-            where: {
-                inscripcion_datos_medicos: null,
-            },
-            select: {
-                id_inscripcion: true,
-                clientes: {
-                    select: {
-                        nombre: true,
-                        apellido: true,
-                    },
-                },
-                expediciones: {
-                    select: {
-                        servicios: {
-                            select: {
-                                nombre: true,
-                            },
-                        },
-                    },
-                },
-            },
-            orderBy: {
-                fecha_inscripcion: "desc",
-            },
-        }),
-        prisma.expediciones.findMany({
-            where: {
-                presupuesto_valido_hasta: {
-                    gte: hoy,
-                    lte: proximaSemana,
-                },
-            },
-            select: {
-                id_expedicion: true,
-                presupuesto_valido_hasta: true,
-                servicios: {
-                    select: {
-                        nombre: true,
-                    },
-                },
-            },
-            orderBy: {
-                presupuesto_valido_hasta: "asc",
-            },
-        }),
-    ]);
+        },
+    });
     return {
-        expediciones_cupos_criticos: expedicionesCuposCriticos.map((expedicion) => ({
-            id_expedicion: expedicion.id_expedicion,
-            nombre_servicio: expedicion.servicios.nombre,
-            fecha_salida: expedicion.fecha_salida,
-            cupos_disponibles: expedicion.cupos_disponibles,
-        })),
-        tokens_vencidos_sin_usar: tokensVencidosSinUsar.map((token) => ({
-            id: token.id,
-            expires_at: token.expires_at,
-            cliente: {
-                nombre: token.clientes.nombre,
-                apellido: token.clientes.apellido,
-            },
+        expediciones_cupos_criticos: expedicionesCuposCriticos,
+        tokens_vencidos_sin_usar: tokensVencidosSinUsar.map((t) => ({
+            id: t.id,
+            expires_at: t.expires_at,
+            cliente: t.clientes,
             expedicion: {
-                nombre_servicio: token.expediciones.servicios.nombre,
-                fecha_salida: token.expediciones.fecha_salida,
+                nombre_servicio: t.expediciones?.servicios?.nombre || "",
+                fecha_salida: t.expediciones?.fecha_salida || new Date(),
             },
         })),
-        inscripciones_sin_datos_medicos: inscripcionesSinDatosMedicos.map((inscripcion) => ({
-            id_inscripcion: inscripcion.id_inscripcion,
-            cliente: {
-                nombre: inscripcion.clientes.nombre,
-                apellido: inscripcion.clientes.apellido,
-            },
-            expedicion: {
-                nombre_servicio: inscripcion.expediciones.servicios.nombre,
-            },
-        })),
-        presupuestos_por_vencer: presupuestosPorVencer
-            .filter((expedicion) => expedicion.presupuesto_valido_hasta)
-            .map((expedicion) => ({
-            id_expedicion: expedicion.id_expedicion,
-            nombre_servicio: expedicion.servicios.nombre,
-            presupuesto_valido_hasta: expedicion.presupuesto_valido_hasta,
-        })),
+        inscripciones_sin_datos_medicos: inscripcionesSinDatosMedicos,
+        presupuestos_por_vencer: presupuestosPorVencer,
     };
 }
 //# sourceMappingURL=dashboard-alertas.service.js.map

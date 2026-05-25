@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../database/prisma.js";
 import type { ApiSuccessResponse } from "../types/api.types.js";
 import {
@@ -7,6 +8,72 @@ import {
   assertDificultadDeletable,
   CatalogosServiceError,
 } from "../utils/catalog-referential.js";
+
+const DEFAULT_UBICACION = {
+  pais: "Argentina",
+  provincia: "General",
+  zona: "Sin especificar",
+} as const;
+
+function mapCatalogosWriteError(error: unknown, entityLabel: string): never {
+  if (error instanceof CatalogosServiceError) {
+    throw error;
+  }
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2002") {
+      throw new CatalogosServiceError(
+        `Ya existe un/a ${entityLabel} con esos datos`,
+        409,
+        "DUPLICATE_ENTRY"
+      );
+    }
+    if (error.code === "P2003") {
+      throw new CatalogosServiceError(
+        "La ubicación seleccionada no existe",
+        400,
+        "INVALID_UBICACION"
+      );
+    }
+  }
+
+  throw error;
+}
+
+async function resolveUbicacionIdForLugar(id_ubicacion?: number): Promise<number> {
+  if (id_ubicacion !== undefined && Number.isFinite(id_ubicacion) && id_ubicacion > 0) {
+    const ubicacion = await prisma.ubicaciones.findUnique({
+      where: { id_ubicacion },
+      select: { id_ubicacion: true },
+    });
+    if (!ubicacion) {
+      throw new CatalogosServiceError("Ubicación no encontrada", 400, "UBICACION_NOT_FOUND");
+    }
+    return ubicacion.id_ubicacion;
+  }
+
+  const existing = await prisma.ubicaciones.findFirst({
+    where: {
+      pais: DEFAULT_UBICACION.pais,
+      provincia: DEFAULT_UBICACION.provincia,
+      zona: DEFAULT_UBICACION.zona,
+    },
+    select: { id_ubicacion: true },
+  });
+  if (existing) {
+    return existing.id_ubicacion;
+  }
+
+  const created = await prisma.ubicaciones.create({
+    data: {
+      ...DEFAULT_UBICACION,
+      activo: true,
+      orden: 0,
+    },
+    select: { id_ubicacion: true },
+  });
+  return created.id_ubicacion;
+}
 
 export type {
   CreateActividadBody,
@@ -43,16 +110,20 @@ export async function createUbicacion(data: {
   zona: string;
   orden?: number;
 }) {
-  const created = await prisma.ubicaciones.create({
-    data: {
-      pais: data.pais.trim(),
-      provincia: data.provincia.trim(),
-      zona: data.zona.trim(),
-      orden: data.orden ?? 0,
-      activo: true,
-    },
-  });
-  return { success: true, data: created } as ApiSuccessResponse<typeof created>;
+  try {
+    const created = await prisma.ubicaciones.create({
+      data: {
+        pais: data.pais.trim(),
+        provincia: data.provincia.trim(),
+        zona: data.zona.trim(),
+        orden: data.orden ?? 0,
+        activo: true,
+      },
+    });
+    return { success: true, data: created } as ApiSuccessResponse<typeof created>;
+  } catch (error) {
+    mapCatalogosWriteError(error, "ubicación");
+  }
 }
 
 export async function updateUbicacion(id: number, data: Partial<{
@@ -128,25 +199,30 @@ export async function getLugarById(id: number) {
 
 export async function createLugar(data: {
   nombre: string;
-  id_ubicacion: number;
+  id_ubicacion?: number;
   tipo_lugar?: string;
   altitud?: number;
   descripcion?: string | null;
   orden?: number;
 }) {
-  const created = await prisma.lugares.create({
-    data: {
-      nombre: data.nombre.trim(),
-      id_ubicacion: data.id_ubicacion,
-      tipo_lugar: data.tipo_lugar?.trim() ?? "sin_clasificar",
-      altitud: data.altitud ?? 0,
-      descripcion: data.descripcion?.trim() || null,
-      orden: data.orden ?? 0,
-      activo: true,
-    },
-    include: { ubicaciones: { select: { pais: true, provincia: true, zona: true } } },
-  });
-  return { success: true, data: created } as ApiSuccessResponse<typeof created>;
+  try {
+    const idUbicacion = await resolveUbicacionIdForLugar(data.id_ubicacion);
+    const created = await prisma.lugares.create({
+      data: {
+        nombre: data.nombre.trim(),
+        id_ubicacion: idUbicacion,
+        tipo_lugar: data.tipo_lugar?.trim() ?? "sin_clasificar",
+        altitud: data.altitud ?? 0,
+        descripcion: data.descripcion?.trim() || null,
+        orden: data.orden ?? 0,
+        activo: true,
+      },
+      include: { ubicaciones: { select: { pais: true, provincia: true, zona: true } } },
+    });
+    return { success: true, data: created } as ApiSuccessResponse<typeof created>;
+  } catch (error) {
+    mapCatalogosWriteError(error, "lugar");
+  }
 }
 
 export async function updateLugar(id: number, data: Partial<{
@@ -223,15 +299,19 @@ export async function createActividad(data: {
   descripcion?: string | null;
   orden?: number;
 }) {
-  const created = await prisma.actividades.create({
-    data: {
-      nombre: data.nombre.trim(),
-      descripcion: data.descripcion?.trim() || null,
-      orden: data.orden ?? 0,
-      activo: true,
-    },
-  });
-  return { success: true, data: created } as ApiSuccessResponse<typeof created>;
+  try {
+    const created = await prisma.actividades.create({
+      data: {
+        nombre: data.nombre.trim(),
+        descripcion: data.descripcion?.trim() || null,
+        orden: data.orden ?? 0,
+        activo: true,
+      },
+    });
+    return { success: true, data: created } as ApiSuccessResponse<typeof created>;
+  } catch (error) {
+    mapCatalogosWriteError(error, "actividad");
+  }
 }
 
 export async function updateActividad(id: number, data: Partial<{
@@ -301,15 +381,19 @@ export async function createDificultad(data: {
   descripcion?: string | null;
   orden?: number;
 }) {
-  const created = await prisma.dificultades.create({
-    data: {
-      nivel: data.nivel.trim(),
-      descripcion: data.descripcion?.trim() || null,
-      orden: data.orden ?? 0,
-      activo: true,
-    },
-  });
-  return { success: true, data: created } as ApiSuccessResponse<typeof created>;
+  try {
+    const created = await prisma.dificultades.create({
+      data: {
+        nivel: data.nivel.trim(),
+        descripcion: data.descripcion?.trim() || null,
+        orden: data.orden ?? 0,
+        activo: true,
+      },
+    });
+    return { success: true, data: created } as ApiSuccessResponse<typeof created>;
+  } catch (error) {
+    mapCatalogosWriteError(error, "dificultad");
+  }
 }
 
 export async function updateDificultad(id: number, data: Partial<{

@@ -27,10 +27,17 @@ import {
   deleteDificultad,
   getCatalogosCompletos,
 } from "../services/catalogos.service.js";
+import {
+  createActividadSchema,
+  createDificultadSchema,
+  createLugarSchema,
+  createUbicacionSchema,
+} from "../types/catalogos.dto.js";
 import { CatalogosServiceError } from "../utils/catalog-referential.js";
+import { parseParamId } from "../utils/express-helpers.js";
 
 function parseIdParam(req: Request, res: Response): number | null {
-  const idParam = req.params.id;
+  const idParam = parseParamId(req.params.id);
   if (!idParam) {
     res.status(400).json({ success: false, error: "ID requerido" });
     return null;
@@ -47,7 +54,7 @@ function handleError(error: unknown, res: Response, fallback: string) {
   if (error instanceof z.ZodError) {
     return res.status(400).json({
       success: false,
-      error: "Datos inválidos",
+      error: error.issues[0]?.message ?? "Datos inválidos",
       code: "INVALID_PAYLOAD",
     });
   }
@@ -101,14 +108,13 @@ export class CatalogosController {
 
   static async createUbicacion(req: Request, res: Response) {
     try {
-      const data = req.body as Record<string, unknown>;
-      const args = {
-        pais: String(data.pais || ""),
-        provincia: String(data.provincia || ""),
-        zona: String(data.zona || ""),
-      };
-      if (typeof data.orden === "number") (args as Record<string, unknown>).orden = data.orden;
-      const result = await createUbicacion(args as { pais: string; provincia: string; zona: string; orden?: number });
+      const payload = createUbicacionSchema.parse(req.body);
+      const result = await createUbicacion({
+        pais: payload.pais,
+        provincia: payload.provincia,
+        zona: payload.zona,
+        ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+      });
       res.status(201).json(result);
     } catch (error) {
       handleError(error, res, "Error al crear ubicación");
@@ -181,16 +187,15 @@ export class CatalogosController {
 
   static async createLugar(req: Request, res: Response) {
     try {
-      const data = req.body as Record<string, unknown>;
-      const args = {
-        nombre: String(data.nombre || ""),
-        id_ubicacion: Number(data.id_ubicacion),
-      };
-      if (typeof data.tipo_lugar === "string") (args as Record<string, unknown>).tipo_lugar = data.tipo_lugar;
-      if (typeof data.altitud === "number") (args as Record<string, unknown>).altitud = data.altitud;
-      if (typeof data.descripcion === "string") (args as Record<string, unknown>).descripcion = data.descripcion;
-      if (typeof data.orden === "number") (args as Record<string, unknown>).orden = data.orden;
-      const result = await createLugar(args as Parameters<typeof createLugar>[0]);
+      const payload = createLugarSchema.parse(req.body);
+      const result = await createLugar({
+        nombre: payload.nombre,
+        ...(payload.id_ubicacion !== undefined ? { id_ubicacion: payload.id_ubicacion } : {}),
+        ...(payload.tipo_lugar !== undefined ? { tipo_lugar: payload.tipo_lugar } : {}),
+        ...(payload.altitud !== undefined ? { altitud: payload.altitud } : {}),
+        ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
+        ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+      });
       res.status(201).json(result);
     } catch (error) {
       handleError(error, res, "Error al crear lugar");
@@ -264,11 +269,12 @@ export class CatalogosController {
 
   static async createActividad(req: Request, res: Response) {
     try {
-      const data = req.body as Record<string, unknown>;
-      const args = { nombre: String(data.nombre || "") };
-      if (typeof data.descripcion === "string") (args as Record<string, unknown>).descripcion = data.descripcion;
-      if (typeof data.orden === "number") (args as Record<string, unknown>).orden = data.orden;
-      const result = await createActividad(args as Parameters<typeof createActividad>[0]);
+      const payload = createActividadSchema.parse(req.body);
+      const result = await createActividad({
+        nombre: payload.nombre,
+        ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
+        ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+      });
       res.status(201).json(result);
     } catch (error) {
       handleError(error, res, "Error al crear actividad");
@@ -339,11 +345,12 @@ export class CatalogosController {
 
   static async createDificultad(req: Request, res: Response) {
     try {
-      const data = req.body as Record<string, unknown>;
-      const args = { nivel: String(data.nivel || "") };
-      if (typeof data.descripcion === "string") (args as Record<string, unknown>).descripcion = data.descripcion;
-      if (typeof data.orden === "number") (args as Record<string, unknown>).orden = data.orden;
-      const result = await createDificultad(args as Parameters<typeof createDificultad>[0]);
+      const payload = createDificultadSchema.parse(req.body);
+      const result = await createDificultad({
+        nivel: payload.nivel,
+        ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
+        ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+      });
       res.status(201).json(result);
     } catch (error) {
       handleError(error, res, "Error al crear dificultad");

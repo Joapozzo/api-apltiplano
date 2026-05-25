@@ -323,14 +323,14 @@ model inscripcion_tokens {
   id             Int      @id @default(autoincrement())
   token          String   @unique
   id_expedicion  Int
-  id_cliente     Int
+  id_cliente     Int?
   expires_at     DateTime
   usado          Boolean  @default(false)
   created_at     DateTime @default(now())
   id_inscripcion Int?     @unique
 
   expediciones  expediciones  @relation(fields: [id_expedicion], references: [id_expedicion])
-  clientes      clientes      @relation(fields: [id_cliente], references: [id_cliente])
+  clientes      clientes?     @relation(fields: [id_cliente], references: [id_cliente])
   inscripciones inscripciones? @relation(fields: [id_inscripcion], references: [id_inscripcion])
 }
 
@@ -362,4 +362,21 @@ model notificaciones_admin {
 
   @@index([leida, created_at])
   @@index([tipo, created_at])
+}
+
+model notas_calendario {
+  id_nota        Int       @id @default(autoincrement())
+  id_usuario     Int
+  titulo         String
+  descripcion    String?
+  fecha          DateTime
+  fecha_fin      DateTime?
+  tipo           String    @default("nota")
+  color          String?
+  todo_el_dia    Boolean   @default(false)
+  completada     Boolean   @default(false)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  @@index([id_usuario, fecha])
 }

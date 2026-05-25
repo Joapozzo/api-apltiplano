@@ -1,8 +1,10 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+import { issueCsrfToken } from "../middlewares/csrf.js";
 import { InscripcionesService } from "../services/inscripciones.service.js";
-import { encryptSensitiveData, isEncryptionEnabled } from "../utils/data-protection.js";
+import { encryptInscripcionPii } from "../utils/data-protection.js";
 import type { ApiErrorResponse } from "../types/api.types.js";
+import { parseParamId, parseParamIdOptional } from "../utils/express-helpers.js";
 
 const usuarioSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido").max(100),
@@ -58,36 +60,31 @@ export class InscripcionesController {
         return res.status(400).json(errorResponse);
       }
 
-      if (!id_cliente) {
-        const errorResponse: ApiErrorResponse = {
-          success: false,
-          error: "id_cliente es requerido",
-        };
-        return res.status(400).json(errorResponse);
-      }
-
       const idExpedicionNumber =
         typeof id_expedicion === "string"
           ? parseInt(id_expedicion, 10)
           : Number(id_expedicion);
 
-      const idClienteNumber =
-        typeof id_cliente === "string"
-          ? parseInt(id_cliente, 10)
-          : Number(id_cliente);
+      let idClienteNumber: number | null = null;
+      if (id_cliente !== undefined && id_cliente !== null && id_cliente !== "") {
+        idClienteNumber =
+          typeof id_cliente === "string"
+            ? parseInt(id_cliente, 10)
+            : Number(id_cliente);
+
+        if (isNaN(idClienteNumber)) {
+          const errorResponse: ApiErrorResponse = {
+            success: false,
+            error: "id_cliente debe ser un número válido",
+          };
+          return res.status(400).json(errorResponse);
+        }
+      }
 
       if (isNaN(idExpedicionNumber)) {
         const errorResponse: ApiErrorResponse = {
           success: false,
           error: "id_expedicion debe ser un número válido",
-        };
-        return res.status(400).json(errorResponse);
-      }
-
-      if (isNaN(idClienteNumber)) {
-        const errorResponse: ApiErrorResponse = {
-          success: false,
-          error: "id_cliente debe ser un número válido",
         };
         return res.status(400).json(errorResponse);
       }
@@ -111,7 +108,7 @@ export class InscripcionesController {
 
   static async validateToken(req: Request, res: Response) {
     try {
-      const { token } = req.params;
+      const token = parseParamIdOptional(req.params.token);
 
       if (!token) {
         const errorResponse: ApiErrorResponse = {
@@ -131,9 +128,12 @@ export class InscripcionesController {
         return res.status(400).json(errorResponse);
       }
 
+      const csrfToken = issueCsrfToken(req, res);
+
       res.json({
         success: true,
         data: result,
+        csrfToken,
       });
     } catch (error: any) {
       const errorResponse: ApiErrorResponse = {
@@ -159,31 +159,27 @@ export class InscripcionesController {
 
       const data = parsed.data;
 
-      const usuario = encryptSensitiveData({
-        nombre: data.usuario.nombre,
-        apellido: data.usuario.apellido,
+      const inscripcionPii = encryptInscripcionPii({
         dni: data.usuario.dni,
-        fecha_nacimiento: data.usuario.fecha_nacimiento,
-        email: data.usuario.email,
         telefono: data.usuario.telefono ?? "",
         provincia: data.usuario.provincia ?? "",
         emergencia_nombre: data.usuario.emergencia_nombre ?? "",
         emergencia_telefono: data.usuario.emergencia_telefono ?? "",
       });
 
-      let datosMedicos = undefined;
-      if (data.datos_medicos) {
-        datosMedicos = encryptSensitiveData({
-          cobertura_medica: data.datos_medicos.cobertura_medica ?? "",
-          grupo_sanguineo: data.datos_medicos.grupo_sanguineo ?? "DESCONOCIDO",
-          alergias: data.datos_medicos.alergias,
-          alergias_detalle: data.datos_medicos.alergias_detalle ?? "",
-          diabetes: data.datos_medicos.diabetes,
-          asma: data.datos_medicos.asma,
-          hipertension: data.datos_medicos.hipertension,
-          otros_antecedentes: data.datos_medicos.otros_antecedentes ?? "",
-        });
-      }
+      const usuario = {
+        nombre: data.usuario.nombre,
+        apellido: data.usuario.apellido,
+        dni: inscripcionPii.dni as string,
+        fecha_nacimiento: data.usuario.fecha_nacimiento,
+        email: data.usuario.email,
+        telefono: (inscripcionPii.telefono as string) || undefined,
+        provincia: (inscripcionPii.provincia as string) || undefined,
+        emergencia_nombre: (inscripcionPii.emergencia_nombre as string) || undefined,
+        emergencia_telefono: (inscripcionPii.emergencia_telefono as string) || undefined,
+      };
+
+      const datosMedicos = data.datos_medicos;
 
       let actividadFisica = undefined;
       if (data.actividad_fisica) {
@@ -229,6 +225,9 @@ export class InscripcionesController {
       const filters: {
         estado?: string;
         expedicion?: number;
+        cliente?: number;
+        activas?: boolean;
+        detalle?: boolean;
         search?: string;
         page?: number;
         limit?: number;
@@ -242,6 +241,15 @@ export class InscripcionesController {
       }
       if (req.query.expedicion) {
         filters.expedicion = parseInt(req.query.expedicion as string);
+      }
+      if (req.query.cliente) {
+        filters.cliente = parseInt(req.query.cliente as string);
+      }
+      if (req.query.activas === "true") {
+        filters.activas = true;
+      }
+      if (req.query.detalle === "true") {
+        filters.detalle = true;
       }
       if (req.query.search) {
         filters.search = req.query.search as string;
@@ -264,7 +272,7 @@ export class InscripcionesController {
 
   static async getById(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
 
       if (!id) {
         const errorResponse: ApiErrorResponse = {
@@ -301,7 +309,7 @@ export class InscripcionesController {
 
   static async update(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
       const data = req.body;
 
       if (!id) {
@@ -330,9 +338,37 @@ export class InscripcionesController {
     }
   }
 
+  static async reembolsar(req: Request, res: Response) {
+    try {
+      const id = parseParamId(req.params.id);
+
+      if (!id) {
+        const errorResponse: ApiErrorResponse = {
+          success: false,
+          error: "ID es requerido",
+        };
+        return res.status(400).json(errorResponse);
+      }
+
+      const inscripcion = await InscripcionesService.reembolsarInscripcion(parseInt(id));
+
+      res.json({
+        success: true,
+        data: inscripcion,
+        message: "Inscripción reembolsada y cupo liberado",
+      });
+    } catch (error: any) {
+      const errorResponse: ApiErrorResponse = {
+        success: false,
+        error: error.message || "Error al reembolsar inscripción",
+      };
+      res.status(400).json(errorResponse);
+    }
+  }
+
   static async delete(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
 
       if (!id) {
         const errorResponse: ApiErrorResponse = {
@@ -396,7 +432,7 @@ export class InscripcionesController {
 
   static async disableToken(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
 
       if (!id) {
         const errorResponse: ApiErrorResponse = {

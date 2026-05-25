@@ -1,10 +1,11 @@
 import { prisma } from "../../database/prisma.js";
 import { AppError } from "../../utils/app-error.js";
 import { UploadService } from "../services/upload.service.js";
+import { parseParamId } from "../../utils/express-helpers.js";
 export class UploadController {
     static async subirImagen(req, res, next) {
         try {
-            const idServicio = Number.parseInt(req.params.id_servicio ?? "", 10);
+            const idServicio = Number.parseInt(parseParamId(req.params.id_servicio), 10);
             if (!Number.isInteger(idServicio)) {
                 throw new AppError("ID de servicio inválido", 400);
             }
@@ -42,7 +43,7 @@ export class UploadController {
     }
     static async eliminarImagen(req, res, next) {
         try {
-            const idServicio = Number.parseInt(req.params.id_servicio ?? "", 10);
+            const idServicio = Number.parseInt(parseParamId(req.params.id_servicio), 10);
             const publicId = typeof req.body.public_id === "string" ? req.body.public_id : "";
             if (!Number.isInteger(idServicio)) {
                 throw new AppError("ID de servicio inválido", 400);
@@ -57,9 +58,61 @@ export class UploadController {
             next(error);
         }
     }
+    static async subirFotoCoordinador(req, res, next) {
+        try {
+            const idCoordinador = Number.parseInt(parseParamId(req.params.id_coordinador), 10);
+            if (!Number.isInteger(idCoordinador)) {
+                throw new AppError("ID de coordinador inválido", 400);
+            }
+            if (!req.fileBuffer || !req.fileMimetype) {
+                throw new AppError("No se recibió una imagen procesada", 400);
+            }
+            const result = await UploadService.subirFotoCoordinador({
+                id_coordinador: idCoordinador,
+                buffer: req.fileBuffer,
+                mimetype: req.fileMimetype,
+            });
+            res.status(201).json({
+                url: result.url,
+                public_id: result.public_id,
+                width: result.width,
+                height: result.height,
+                bytes: result.bytes,
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    static async eliminarFotoCoordinador(req, res, next) {
+        try {
+            const idCoordinador = Number.parseInt(parseParamId(req.params.id_coordinador), 10);
+            if (!Number.isInteger(idCoordinador)) {
+                throw new AppError("ID de coordinador inválido", 400);
+            }
+            await UploadService.eliminarFotoCoordinador(idCoordinador);
+            res.status(204).send();
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    static async getFotoCoordinador(req, res, next) {
+        try {
+            const idCoordinador = Number.parseInt(parseParamId(req.params.id_coordinador), 10);
+            if (!Number.isInteger(idCoordinador)) {
+                throw new AppError("ID de coordinador inválido", 400);
+            }
+            const foto = await UploadService.getFotoCoordinador(idCoordinador);
+            res.json(foto);
+        }
+        catch (error) {
+            next(error);
+        }
+    }
     static async getImagenesServicio(req, res, next) {
         try {
-            const idServicio = Number.parseInt(req.params.id_servicio ?? "", 10);
+            const idServicio = Number.parseInt(parseParamId(req.params.id_servicio), 10);
             if (!Number.isInteger(idServicio)) {
                 throw new AppError("ID de servicio inválido", 400);
             }

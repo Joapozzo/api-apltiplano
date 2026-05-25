@@ -1,4 +1,5 @@
 import { ItemsServicioService, } from "../services/items-servicio.service.js";
+import { parseParamId } from "../utils/express-helpers.js";
 export class ItemsServicioController {
     static async getAll(req, res) {
         try {
@@ -27,7 +28,7 @@ export class ItemsServicioController {
     }
     static async getById(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,
@@ -76,7 +77,7 @@ export class ItemsServicioController {
     }
     static async update(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,
@@ -98,7 +99,7 @@ export class ItemsServicioController {
     }
     static async delete(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,

@@ -4,6 +4,7 @@ import {
   type ItemServicioFilters,
 } from "../services/items-servicio.service.js";
 import type { ApiErrorResponse } from "../types/api.types.js";
+import { parseParamId } from "../utils/express-helpers.js";
 
 export class ItemsServicioController {
   static async getAll(req: Request, res: Response) {
@@ -34,7 +35,7 @@ export class ItemsServicioController {
 
   static async getById(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
       if (!id) {
         const errorResponse: ApiErrorResponse = {
           success: false,
@@ -84,7 +85,7 @@ export class ItemsServicioController {
 
   static async update(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
       if (!id) {
         const errorResponse: ApiErrorResponse = {
           success: false,
@@ -107,7 +108,7 @@ export class ItemsServicioController {
 
   static async delete(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
       if (!id) {
         const errorResponse: ApiErrorResponse = {
           success: false,

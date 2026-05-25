@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import type { AppRole, AuthenticatedRequestUser } from "../types/auth.types.js";
 import { APP_ROLES } from "../types/auth.types.js";
+import { decryptClientePii } from "../utils/data-protection.js";
 
 export const userBaseSelect = {
   id_usuario: true,
@@ -57,27 +58,30 @@ export function mapAuthenticatedUser(user: UserWithRelations): AuthenticatedRequ
 
 export function mapUserResponse(user: UserWithRelations) {
   const roles = mapRoles(user.usuario_roles);
+  const nombre = (decryptClientePii({ nombre: user.nombre }).nombre as string) ?? user.nombre;
+  const apellido = (decryptClientePii({ apellido: user.apellido }).apellido as string) ?? user.apellido;
+  const cliente = user.cliente ? decryptClientePii(user.cliente) : null;
 
   return {
     id_usuario: user.id_usuario,
     firebase_uid: user.firebase_uid,
     email: user.email,
     username: user.username,
-    nombre: user.nombre,
-    apellido: user.apellido,
+    nombre,
+    apellido,
     activo: user.activo,
     fecha_registro: user.fecha_registro,
     fecha_actualizacion: user.fecha_actualizacion,
     roles,
     rol_principal: roles[0] ?? APP_ROLES.USER,
-    cliente: user.cliente
+    cliente: cliente
       ? {
-          id_cliente: user.cliente.id_cliente,
-          nombre: user.cliente.nombre,
-          apellido: user.cliente.apellido,
-          email: user.cliente.email,
-          fecha_creacion: user.cliente.fecha_creacion,
-          total_inscripciones: user.cliente._count.inscripciones,
+          id_cliente: cliente.id_cliente as number,
+          nombre: cliente.nombre as string,
+          apellido: cliente.apellido as string,
+          email: cliente.email as string,
+          fecha_creacion: user.cliente!.fecha_creacion,
+          total_inscripciones: user.cliente!._count.inscripciones,
         }
       : null,
   };

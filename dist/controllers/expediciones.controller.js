@@ -1,4 +1,5 @@
 import { ExpedicionesService } from "../services/expediciones.service.js";
+import { parseParamId } from "../utils/express-helpers.js";
 export class ExpedicionesController {
     static async getAll(req, res) {
         try {
@@ -9,6 +10,7 @@ export class ExpedicionesController {
                     : undefined,
                 fecha_desde: req.query.fecha_desde,
                 fecha_hasta: req.query.fecha_hasta,
+                search: req.query.search,
                 page: req.query.page ? parseInt(req.query.page) : 1,
                 limit: req.query.limit ? parseInt(req.query.limit) : 50,
             };
@@ -25,7 +27,7 @@ export class ExpedicionesController {
     }
     static async getById(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,
@@ -99,7 +101,7 @@ export class ExpedicionesController {
     }
     static async update(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             const data = req.body;
             if (!id) {
                 return res.status(400).json({
@@ -134,7 +136,7 @@ export class ExpedicionesController {
     }
     static async delete(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 return res.status(400).json({
                     success: false,
@@ -155,7 +157,7 @@ export class ExpedicionesController {
     }
     static async changeEstado(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             const { estado } = req.body;
             if (!id) {
                 return res.status(400).json({
@@ -183,7 +185,7 @@ export class ExpedicionesController {
     }
     static async recalcularCupos(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 return res.status(400).json({
                     success: false,

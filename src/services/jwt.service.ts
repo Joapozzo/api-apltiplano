@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 export interface TokenPayload {
   id_expedicion: number;
-  id_cliente: number;
+  id_cliente: number | null;
   expires_at: string;
 }
 
@@ -12,7 +12,7 @@ export class JWTService {
 
   static generateToken(
     id_expedicion: number,
-    id_cliente: number,
+    id_cliente: number | null = null,
     expiresInDays: number = 7
   ): string {
     const expiresAt = new Date();
@@ -61,12 +61,19 @@ export class JWTService {
 
       const payload: TokenPayload = JSON.parse(decrypted);
 
+      if (typeof payload.id_expedicion !== "number") {
+        return null;
+      }
+
       if (
-        typeof payload.id_expedicion !== "number" ||
+        payload.id_cliente !== null &&
+        payload.id_cliente !== undefined &&
         typeof payload.id_cliente !== "number"
       ) {
         return null;
       }
+
+      payload.id_cliente = payload.id_cliente ?? null;
 
       const expiresAt = new Date(payload.expires_at);
       if (expiresAt < new Date()) {

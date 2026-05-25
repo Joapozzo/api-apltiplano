@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { ExpedicionesService, type ExpedicionFilters } from "../services/expediciones.service.js";
 import type { ApiErrorResponse } from "../types/api.types.js";
+import { parseParamId } from "../utils/express-helpers.js";
 
 export class ExpedicionesController {
   static async getAll(req: Request, res: Response) {
@@ -30,7 +31,7 @@ export class ExpedicionesController {
 
   static async getById(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
 
       if (!id) {
         const errorResponse: ApiErrorResponse = {
@@ -111,7 +112,7 @@ export class ExpedicionesController {
 
   static async update(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
       const data = req.body;
 
       if (!id) {
@@ -150,7 +151,7 @@ export class ExpedicionesController {
 
   static async delete(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
 
       if (!id) {
         return res.status(400).json({
@@ -173,7 +174,7 @@ export class ExpedicionesController {
 
   static async changeEstado(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
       const { estado } = req.body;
 
       if (!id) {
@@ -204,7 +205,7 @@ export class ExpedicionesController {
 
   static async recalcularCupos(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
 
       if (!id) {
         return res.status(400).json({

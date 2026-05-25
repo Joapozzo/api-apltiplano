@@ -13,6 +13,13 @@ import itemsServicioRoutes from "./routes/items-servicio.routes.js";
 import usuariosRoutes from "./routes/usuarios.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
+import adminSearchRoutes from "./routes/admin-search.routes.js";
+import coordinadoresRoutes from "./routes/coordinadores.routes.js";
+import uploadRoutes from "./uploads/routes/upload.routes.js";
+import configRoutes from "./routes/config.routes.js";
+import publicConfigRoutes from "./routes/public-config.routes.js";
+import notificacionesRoutes from "./routes/notificaciones.routes.js";
 import { APP_ROLES } from "./types/auth.types.js";
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
@@ -41,7 +48,14 @@ app.use("/api/servicios", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMI
 app.use("/api/catalogos", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), catalogosRoutes);
 app.use("/api/items-servicio", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), itemsServicioRoutes);
 app.use("/api/usuarios", csrfMiddleware, authenticate, usuariosRoutes);
+app.use("/api/coordinadores", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), coordinadoresRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api", csrfMiddleware, uploadRoutes);
+app.use("/api/admin/search", authenticate, authorize(APP_ROLES.ADMIN), adminSearchRoutes);
+app.use("/api/config", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), configRoutes);
+app.use("/api/public/config", publicConfigRoutes);
+app.use("/api/admin/notificaciones", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), notificacionesRoutes);
+app.use("/api", dashboardRoutes);
 app.get("/", (req, res) => {
     res.send("Altiplano API - Running");
 });

@@ -32,9 +32,11 @@ export declare class CoordinadoresService {
                 expedicion_coordinadores: number;
             };
             dni: string;
+            url_foto: string | null;
             id_coordinador: number;
             certificaciones: string[];
             especialidades: string[];
+            foto_public_id: string | null;
         }[];
     }>;
     static getById(id: number): Promise<{
@@ -47,6 +49,7 @@ export declare class CoordinadoresService {
             certificaciones: string[];
             especialidades: string[];
             activo: boolean;
+            url_foto: string | null;
             historial: {
                 id_expedicion: number;
                 servicio: string;
@@ -66,9 +69,11 @@ export declare class CoordinadoresService {
             apellido: string;
             activo: boolean;
             dni: string;
+            url_foto: string | null;
             id_coordinador: number;
             certificaciones: string[];
             especialidades: string[];
+            foto_public_id: string | null;
         };
     }>;
     static update(id: number, data: UpdateCoordinadorData): Promise<{
@@ -78,9 +83,11 @@ export declare class CoordinadoresService {
             apellido: string;
             activo: boolean;
             dni: string;
+            url_foto: string | null;
             id_coordinador: number;
             certificaciones: string[];
             especialidades: string[];
+            foto_public_id: string | null;
         };
     }>;
     static delete(id: number): Promise<{

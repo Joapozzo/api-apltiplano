@@ -51,27 +51,35 @@ export declare class InscripcionesService {
             servicios: {
                 lugares: {
                     ubicaciones: {
+                        activo: boolean;
                         provincia: string;
                         id_ubicacion: number;
+                        orden: number;
                         pais: string;
                         zona: string;
                     };
                 } & {
                     nombre: string;
+                    activo: boolean;
+                    descripcion: string | null;
                     id_lugar: number;
+                    id_ubicacion: number;
+                    orden: number;
                     tipo_lugar: string;
                     altitud: number;
-                    descripcion: string | null;
-                    id_ubicacion: number;
                 };
                 actividades: {
                     nombre: string;
-                    id_actividad: number;
+                    activo: boolean;
                     descripcion: string | null;
+                    id_actividad: number;
+                    orden: number;
                 };
                 dificultades: {
-                    id_dificultad: number;
+                    activo: boolean;
                     descripcion: string | null;
+                    id_dificultad: number;
+                    orden: number;
                     nivel: string;
                 };
             } & {
@@ -133,27 +141,35 @@ export declare class InscripcionesService {
         servicio: {
             lugares: {
                 ubicaciones: {
+                    activo: boolean;
                     provincia: string;
                     id_ubicacion: number;
+                    orden: number;
                     pais: string;
                     zona: string;
                 };
             } & {
                 nombre: string;
+                activo: boolean;
+                descripcion: string | null;
                 id_lugar: number;
+                id_ubicacion: number;
+                orden: number;
                 tipo_lugar: string;
                 altitud: number;
-                descripcion: string | null;
-                id_ubicacion: number;
             };
             actividades: {
                 nombre: string;
-                id_actividad: number;
+                activo: boolean;
                 descripcion: string | null;
+                id_actividad: number;
+                orden: number;
             };
             dificultades: {
-                id_dificultad: number;
+                activo: boolean;
                 descripcion: string | null;
+                id_dificultad: number;
+                orden: number;
                 nivel: string;
             };
         } & {
@@ -233,11 +249,13 @@ export declare class InscripcionesService {
                 servicios: {
                     lugares: {
                         nombre: string;
+                        activo: boolean;
+                        descripcion: string | null;
                         id_lugar: number;
+                        id_ubicacion: number;
+                        orden: number;
                         tipo_lugar: string;
                         altitud: number;
-                        descripcion: string | null;
-                        id_ubicacion: number;
                     };
                 } & {
                     nombre: string;
@@ -328,27 +346,35 @@ export declare class InscripcionesService {
             servicios: {
                 lugares: {
                     ubicaciones: {
+                        activo: boolean;
                         provincia: string;
                         id_ubicacion: number;
+                        orden: number;
                         pais: string;
                         zona: string;
                     };
                 } & {
                     nombre: string;
+                    activo: boolean;
+                    descripcion: string | null;
                     id_lugar: number;
+                    id_ubicacion: number;
+                    orden: number;
                     tipo_lugar: string;
                     altitud: number;
-                    descripcion: string | null;
-                    id_ubicacion: number;
                 };
                 actividades: {
                     nombre: string;
-                    id_actividad: number;
+                    activo: boolean;
                     descripcion: string | null;
+                    id_actividad: number;
+                    orden: number;
                 };
                 dificultades: {
-                    id_dificultad: number;
+                    activo: boolean;
                     descripcion: string | null;
+                    id_dificultad: number;
+                    orden: number;
                     nivel: string;
                 };
             } & {
@@ -409,6 +435,7 @@ export declare class InscripcionesService {
         };
         inscripcion_datos_medicos: {
             id_inscripcion: number;
+            id_dato_medico: number;
             cobertura_medica: string | null;
             grupo_sanguineo: string | null;
             alergias: boolean;
@@ -417,26 +444,25 @@ export declare class InscripcionesService {
             asma: boolean;
             hipertension: boolean;
             otros_antecedentes: string | null;
-            id_dato_medico: number;
         } | null;
         inscripcion_actividad_fisica: {
             id_inscripcion: number;
+            id_actividad_fisica: number;
             realiza_entrenamiento: boolean;
             tipo_entrenamiento: string | null;
             frecuencia_semanal: number | null;
             experiencia_trekking: boolean;
             altura_cm: number | null;
             peso_kg: number | null;
-            id_actividad_fisica: number;
         } | null;
         pagos: {
             id_inscripcion: number;
+            tipo: string;
             estado: string;
             fecha_pago: Date;
             id_pago: number;
-            monto: import("@prisma/client/runtime/library").Decimal;
+            monto: import("@prisma/client/runtime/library.js").Decimal;
             moneda: string;
-            tipo: string;
             metodo_pago: string;
         }[];
     } & {

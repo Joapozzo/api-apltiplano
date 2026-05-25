@@ -2,11 +2,9 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../../database/prisma.js";
 import { AppError } from "../../utils/app-error.js";
 import { storageAdapter } from "../adapters/index.js";
-function buildCarpeta(idServicio) {
-    return `altiplano/servicios/${idServicio}`;
-}
+import { coordinadorFotoCarpeta, coordinadorFotoPublicId, servicioCarpeta, servicioPublicIdGenerated, } from "../utils/upload-paths.js";
 function buildGeneratedPublicId(idServicio) {
-    return `${buildCarpeta(idServicio)}/${Date.now()}-${randomUUID().slice(0, 8)}`;
+    return servicioPublicIdGenerated(idServicio, `${Date.now()}-${randomUUID().slice(0, 8)}`);
 }
 function matchesPublicId(url, publicId) {
     const normalizedUrl = decodeURIComponent(url.split("?")[0] ?? url);
@@ -34,7 +32,7 @@ export class UploadService {
         const result = await storageAdapter.upload({
             buffer: dto.buffer,
             mimetype: dto.mimetype,
-            carpeta: buildCarpeta(dto.id_servicio),
+            carpeta: servicioCarpeta(dto.id_servicio),
             public_id: publicId,
         });
         const hasMatchingExisting = servicio.urls_fotos.some((url) => matchesPublicId(url, publicId));
@@ -84,8 +82,60 @@ export class UploadService {
             },
         });
     }
+    static async subirFotoCoordinador(dto) {
+        const coordinador = await prisma.coordinadores.findUnique({
+            where: { id_coordinador: dto.id_coordinador },
+            select: { id_coordinador: true, foto_public_id: true },
+        });
+        if (!coordinador) {
+            throw new AppError("Coordinador no encontrado", 404);
+        }
+        const result = await storageAdapter.upload({
+            buffer: dto.buffer,
+            mimetype: dto.mimetype,
+            carpeta: coordinadorFotoCarpeta(),
+            public_id: coordinadorFotoPublicId(dto.id_coordinador),
+        });
+        await prisma.coordinadores.update({
+            where: { id_coordinador: dto.id_coordinador },
+            data: {
+                url_foto: result.url,
+                foto_public_id: result.public_id,
+            },
+        });
+        return result;
+    }
+    static async eliminarFotoCoordinador(id_coordinador, options = {}) {
+        const coordinador = await prisma.coordinadores.findUnique({
+            where: { id_coordinador },
+            select: { id_coordinador: true, foto_public_id: true },
+        });
+        if (!coordinador) {
+            throw new AppError("Coordinador no encontrado", 404);
+        }
+        if (!coordinador.foto_public_id) {
+            if (options.skipNotFound)
+                return;
+            throw new AppError("El coordinador no tiene foto", 404);
+        }
+        await storageAdapter.delete(coordinador.foto_public_id);
+        await prisma.coordinadores.update({
+            where: { id_coordinador },
+            data: { url_foto: null, foto_public_id: null },
+        });
+    }
+    static async getFotoCoordinador(id_coordinador) {
+        const coordinador = await prisma.coordinadores.findUnique({
+            where: { id_coordinador },
+            select: { url_foto: true, foto_public_id: true },
+        });
+        if (!coordinador) {
+            throw new AppError("Coordinador no encontrado", 404);
+        }
+        return coordinador;
+    }
     static async eliminarImagenesServicio(id_servicio) {
-        const carpeta = buildCarpeta(id_servicio);
+        const carpeta = servicioCarpeta(id_servicio);
         await storageAdapter.deleteFolder(carpeta);
         await prisma.servicios.update({
             where: {

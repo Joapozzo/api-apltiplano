@@ -1,5 +1,6 @@
 import { CoordinadoresService } from "../services/coordinadores.service.js";
 import { z } from "zod";
+import { parseParamId } from "../utils/express-helpers.js";
 const createCoordinadorSchema = z.object({
     nombre: z.string().min(1, "El nombre es requerido"),
     apellido: z.string().min(1, "El apellido es requerido"),
@@ -40,7 +41,7 @@ export class CoordinadoresController {
     }
     static async getById(req, res) {
         try {
-            const paramId = req.params.id;
+            const paramId = parseParamId(req.params.id);
             if (!paramId) {
                 const err = { success: false, error: "ID inválido" };
                 return res.status(400).json(err);
@@ -90,7 +91,7 @@ export class CoordinadoresController {
     }
     static async update(req, res) {
         try {
-            const paramId = req.params.id;
+            const paramId = parseParamId(req.params.id);
             if (!paramId) {
                 const err = { success: false, error: "ID inválido" };
                 return res.status(400).json(err);
@@ -129,7 +130,7 @@ export class CoordinadoresController {
     }
     static async delete(req, res) {
         try {
-            const paramId = req.params.id;
+            const paramId = parseParamId(req.params.id);
             if (!paramId) {
                 const err = { success: false, error: "ID inválido" };
                 return res.status(400).json(err);
@@ -151,7 +152,7 @@ export class CoordinadoresController {
     }
     static async asignarAExpedicion(req, res) {
         try {
-            const paramId = req.params.id;
+            const paramId = parseParamId(req.params.id);
             if (!paramId) {
                 const err = { success: false, error: "ID inválido" };
                 return res.status(400).json(err);
@@ -182,8 +183,8 @@ export class CoordinadoresController {
     }
     static async desasignarDeExpedicion(req, res) {
         try {
-            const paramId = req.params.id;
-            const paramIdExp = req.params.id_expedicion;
+            const paramId = parseParamId(req.params.id);
+            const paramIdExp = parseParamId(req.params.id_expedicion);
             if (!paramId || !paramIdExp) {
                 const err = { success: false, error: "ID inválido" };
                 return res.status(400).json(err);
@@ -206,7 +207,7 @@ export class CoordinadoresController {
     }
     static async getHistorial(req, res) {
         try {
-            const paramId = req.params.id;
+            const paramId = parseParamId(req.params.id);
             if (!paramId) {
                 const err = { success: false, error: "ID inválido" };
                 return res.status(400).json(err);

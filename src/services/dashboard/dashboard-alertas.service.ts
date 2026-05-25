@@ -117,7 +117,9 @@ export async function getDashboardAlertas(): Promise<DashboardAlertas> {
     tokens_vencidos_sin_usar: tokensVencidosSinUsar.map((t) => ({
       id: t.id,
       expires_at: t.expires_at,
-      cliente: t.clientes,
+      cliente: t.clientes
+        ? { nombre: t.clientes.nombre, apellido: t.clientes.apellido }
+        : { nombre: "Link genérico", apellido: "" },
       expedicion: {
         nombre_servicio: t.expediciones?.servicios?.nombre || "",
         fecha_salida: t.expediciones?.fecha_salida || new Date(),

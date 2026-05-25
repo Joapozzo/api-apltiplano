@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { InscripcionesService } from "../services/inscripciones.service.js";
-import { encryptSensitiveData, isEncryptionEnabled } from "../utils/data-protection.js";
+import { encryptSensitiveData } from "../utils/data-protection.js";
+import { parseParamId, parseParamIdOptional } from "../utils/express-helpers.js";
 const usuarioSchema = z.object({
     nombre: z.string().min(1, "El nombre es requerido").max(100),
     apellido: z.string().min(1, "El apellido es requerido").max(100),
@@ -90,7 +91,7 @@ export class InscripcionesController {
     }
     static async validateToken(req, res) {
         try {
-            const { token } = req.params;
+            const token = parseParamIdOptional(req.params.token);
             if (!token) {
                 const errorResponse = {
                     success: false,
@@ -221,7 +222,7 @@ export class InscripcionesController {
     }
     static async getById(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,
@@ -252,7 +253,7 @@ export class InscripcionesController {
     }
     static async update(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             const data = req.body;
             if (!id) {
                 const errorResponse = {
@@ -277,7 +278,7 @@ export class InscripcionesController {
     }
     static async delete(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,
@@ -330,7 +331,7 @@ export class InscripcionesController {
     }
     static async disableToken(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,

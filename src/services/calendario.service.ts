@@ -1,6 +1,18 @@
 import { prisma } from "../database/prisma.js";
 import { getNotasByMes } from "./notas-calendario.service.js";
 
+type ExpedicionCalendario = {
+  id_expedicion: number;
+  fecha_salida: Date;
+  fecha_fin: Date;
+  estado: string;
+  cupos_disponibles: number;
+  servicios: {
+    nombre: string;
+    slug: string | null;
+  };
+};
+
 export async function getVistaCalendario(anio: number, mes: number, id_usuario: number) {
   const fechaDesde = new Date(Date.UTC(anio, mes - 1, 1, 0, 0, 0, 0));
   const fechaHasta = new Date(Date.UTC(anio, mes, 0, 23, 59, 59, 999));
@@ -44,7 +56,7 @@ export async function getVistaCalendario(anio: number, mes: number, id_usuario: 
   ]);
 
   return {
-    expediciones: expediciones.map((expedicion) => ({
+    expediciones: expediciones.map((expedicion: ExpedicionCalendario) => ({
       id_expedicion: expedicion.id_expedicion,
       nombre_servicio: expedicion.servicios.nombre,
       slug: expedicion.servicios.slug,

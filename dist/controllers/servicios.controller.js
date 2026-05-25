@@ -1,4 +1,5 @@
 import { ServiciosService } from "../services/servicios.service.js";
+import { parseParamId } from "../utils/express-helpers.js";
 export class ServiciosController {
     static async getAll(req, res) {
         try {
@@ -35,7 +36,7 @@ export class ServiciosController {
     }
     static async getById(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,
@@ -83,7 +84,7 @@ export class ServiciosController {
     }
     static async update(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,
@@ -105,7 +106,7 @@ export class ServiciosController {
     }
     static async delete(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,
@@ -127,7 +128,7 @@ export class ServiciosController {
     }
     static async toggleActivo(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,
@@ -149,7 +150,7 @@ export class ServiciosController {
     }
     static async toggleDestacado(req, res) {
         try {
-            const { id } = req.params;
+            const id = parseParamId(req.params.id);
             if (!id) {
                 const errorResponse = {
                     success: false,

@@ -18,12 +18,13 @@ const userIdParamSchema = z.object({
 });
 
 const createUserSchema = z.object({
-  firebase_uid: z.string().trim().min(1, "firebase_uid es obligatorio"),
-  email: z.string().trim().email("Email invAlido"),
+  email: z.string().trim().email("Email inválido"),
   nombre: z.string().trim().min(1, "El nombre es obligatorio"),
   apellido: z.string().trim().min(1, "El apellido es obligatorio"),
   username: z.string().trim().min(1).optional(),
   rol: z.enum(["USER", "ADMIN"]).optional(),
+  crear_perfil_cliente: z.boolean().optional(),
+  password: z.string().trim().min(8, "La contraseña debe tener al menos 8 caracteres").optional(),
   activo: z.boolean().optional(),
 });
 

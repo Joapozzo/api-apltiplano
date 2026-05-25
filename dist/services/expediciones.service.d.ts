@@ -4,6 +4,7 @@ export interface ExpedicionFilters {
     servicio?: number;
     fecha_desde?: string;
     fecha_hasta?: string;
+    search?: string;
     page?: number;
     limit?: number;
 }
@@ -57,27 +58,35 @@ export declare class ExpedicionesService {
         servicios: {
             lugares: {
                 ubicaciones: {
+                    activo: boolean;
                     provincia: string;
                     id_ubicacion: number;
+                    orden: number;
                     pais: string;
                     zona: string;
                 };
             } & {
                 nombre: string;
+                activo: boolean;
+                descripcion: string | null;
                 id_lugar: number;
+                id_ubicacion: number;
+                orden: number;
                 tipo_lugar: string;
                 altitud: number;
-                descripcion: string | null;
-                id_ubicacion: number;
             };
             actividades: {
                 nombre: string;
-                id_actividad: number;
+                activo: boolean;
                 descripcion: string | null;
+                id_actividad: number;
+                orden: number;
             };
             dificultades: {
-                id_dificultad: number;
+                activo: boolean;
                 descripcion: string | null;
+                id_dificultad: number;
+                orden: number;
                 nivel: string;
             };
         } & {
@@ -129,7 +138,7 @@ export declare class ExpedicionesService {
             moneda: string;
             id_expedicion_precio: number;
             nombre_paquete: string;
-            precio: import("@prisma/client/runtime/library").Decimal;
+            precio: import("@prisma/client/runtime/library.js").Decimal;
         }[];
     } & {
         fecha_actualizacion: Date;
@@ -172,27 +181,35 @@ export declare class ExpedicionesService {
         servicios: {
             lugares: {
                 ubicaciones: {
+                    activo: boolean;
                     provincia: string;
                     id_ubicacion: number;
+                    orden: number;
                     pais: string;
                     zona: string;
                 };
             } & {
                 nombre: string;
+                activo: boolean;
+                descripcion: string | null;
                 id_lugar: number;
+                id_ubicacion: number;
+                orden: number;
                 tipo_lugar: string;
                 altitud: number;
-                descripcion: string | null;
-                id_ubicacion: number;
             };
             actividades: {
                 nombre: string;
-                id_actividad: number;
+                activo: boolean;
                 descripcion: string | null;
+                id_actividad: number;
+                orden: number;
             };
             dificultades: {
-                id_dificultad: number;
+                activo: boolean;
                 descripcion: string | null;
+                id_dificultad: number;
+                orden: number;
                 nivel: string;
             };
         } & {
@@ -244,7 +261,7 @@ export declare class ExpedicionesService {
             moneda: string;
             id_expedicion_precio: number;
             nombre_paquete: string;
-            precio: import("@prisma/client/runtime/library").Decimal;
+            precio: import("@prisma/client/runtime/library.js").Decimal;
         }[];
     } & {
         fecha_actualizacion: Date;
@@ -271,7 +288,7 @@ export declare class ExpedicionesService {
             moneda: string;
             id_expedicion_precio: number;
             nombre_paquete: string;
-            precio: import("@prisma/client/runtime/library").Decimal;
+            precio: import("@prisma/client/runtime/library.js").Decimal;
         }[];
     } & {
         fecha_actualizacion: Date;
@@ -297,7 +314,7 @@ export declare class ExpedicionesService {
             moneda: string;
             id_expedicion_precio: number;
             nombre_paquete: string;
-            precio: import("@prisma/client/runtime/library").Decimal;
+            precio: import("@prisma/client/runtime/library.js").Decimal;
         }[];
     } & {
         fecha_actualizacion: Date;
@@ -323,7 +340,7 @@ export declare class ExpedicionesService {
             moneda: string;
             id_expedicion_precio: number;
             nombre_paquete: string;
-            precio: import("@prisma/client/runtime/library").Decimal;
+            precio: import("@prisma/client/runtime/library.js").Decimal;
         }[];
     } & {
         fecha_actualizacion: Date;

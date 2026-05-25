@@ -3,6 +3,8 @@ import type { ApiSuccessResponse, ApiPaginatedResponse } from "../types/api.type
 import { getExpedicionEstadoInicial, getPresupuestoDiasValidez } from "../utils/config-runtime.js";
 import { emitSalidaEstadoCompleta } from "./notificaciones/notificaciones-emit.service.js";
 import { syncAlertasOperativas } from "./notificaciones/notificaciones-sync.service.js";
+import { decryptInscripcionRecord } from "../utils/data-protection.js";
+import { INSCRIPCION_ESTADOS } from "../utils/inscripcion-estado.js";
 
 export interface ExpedicionFilters {
   estado?: string;
@@ -200,10 +202,15 @@ export class ExpedicionesService {
       throw new Error("Expedición no encontrada");
     }
 
+    const data = {
+      ...expedicion,
+      inscripciones: expedicion.inscripciones.map((ins) => decryptInscripcionRecord(ins)),
+    };
+
     return {
       success: true,
-      data: expedicion,
-    } as ApiSuccessResponse<typeof expedicion>;
+      data,
+    } as ApiSuccessResponse<typeof data>;
   }
 
   /**
@@ -470,7 +477,11 @@ export class ExpedicionesService {
       where: {
         id_expedicion,
         estado: {
-          in: ["Confirmado", "Inscripto"],
+          in: [
+            INSCRIPCION_ESTADOS.CONFIRMADO,
+            INSCRIPCION_ESTADOS.INSCRIPTO,
+            INSCRIPCION_ESTADOS.PENDIENTE,
+          ],
         },
       },
     });

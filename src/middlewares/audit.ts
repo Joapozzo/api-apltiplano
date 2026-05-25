@@ -78,11 +78,12 @@ function extractResourceType(path: string): string | undefined {
   return undefined;
 }
 
-function extractResourceId(params: Record<string, string | undefined>): string | undefined {
+function extractResourceId(params: Record<string, string | string[] | undefined>): string | undefined {
   const idFields = ["id", "id_usuario", "id_expedicion", "id_servicio", "id_cliente", "id_inscripcion"];
   for (const field of idFields) {
-    if (params[field]) {
-      return params[field];
+    const value = params[field];
+    if (value && typeof value === "string") {
+      return value;
     }
   }
   return undefined;

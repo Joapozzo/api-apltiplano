@@ -18,51 +18,60 @@ const upload = multer({
         fileSize: MAX_FILE_SIZE,
     },
 });
-export async function procesarImagen(buffer, mimetype) {
+export async function procesarImagen(buffer, mimetype, options = {}) {
     if (!allowedMimeTypes.includes(mimetype)) {
         throw new AppError("Formato de imagen no soportado", 400);
     }
     validateMagicBytes(buffer, mimetype);
+    const maxWidth = options.maxWidth ?? 1200;
+    const quality = options.quality ?? 80;
     return sharp(buffer)
         .resize({
-        width: 1200,
+        width: maxWidth,
         fit: "inside",
         withoutEnlargement: true,
     })
-        .webp({ quality: 80 })
+        .webp({ quality })
         .toBuffer();
 }
-export function uploadMiddleware(req, res, next) {
-    upload.single("imagen")(req, res, async (error) => {
-        if (error instanceof multer.MulterError) {
-            if (error.code === "LIMIT_FILE_SIZE") {
-                next(new AppError("La imagen supera el máximo permitido de 10MB", 400));
+export async function procesarImagenAvatar(buffer, mimetype) {
+    return procesarImagen(buffer, mimetype, { maxWidth: 512, quality: 78 });
+}
+function createUploadMiddleware(process) {
+    return (req, res, next) => {
+        upload.single("imagen")(req, res, async (error) => {
+            if (error instanceof multer.MulterError) {
+                if (error.code === "LIMIT_FILE_SIZE") {
+                    next(new AppError("La imagen supera el máximo permitido de 10MB", 400));
+                    return;
+                }
+                next(new AppError(error.message, 400));
                 return;
             }
-            next(new AppError(error.message, 400));
-            return;
-        }
-        if (error) {
-            next(error);
-            return;
-        }
-        if (!req.file) {
-            next(new AppError("Debes enviar una imagen en el campo 'imagen'", 400));
-            return;
-        }
-        if (req.file.size < MIN_FILE_SIZE) {
-            next(new AppError("La imagen es demasiado pequeña (mínimo 1KB)", 400));
-            return;
-        }
-        try {
-            req.fileBuffer = await procesarImagen(req.file.buffer, req.file.mimetype);
-            req.fileMimetype = "image/webp";
-            next();
-        }
-        catch (processingError) {
-            const message = processingError instanceof Error ? processingError.message : "Error al procesar la imagen";
-            next(new AppError(message, 400));
-        }
-    });
+            if (error) {
+                next(error);
+                return;
+            }
+            if (!req.file) {
+                next(new AppError("Debes enviar una imagen en el campo 'imagen'", 400));
+                return;
+            }
+            if (req.file.size < MIN_FILE_SIZE) {
+                next(new AppError("La imagen es demasiado pequeña (mínimo 1KB)", 400));
+                return;
+            }
+            try {
+                req.fileBuffer = await process(req.file.buffer, req.file.mimetype);
+                req.fileMimetype = "image/webp";
+                next();
+            }
+            catch (processingError) {
+                const message = processingError instanceof Error ? processingError.message : "Error al procesar la imagen";
+                next(new AppError(message, 400));
+            }
+        });
+    };
 }
+export const uploadMiddleware = createUploadMiddleware(procesarImagen);
+export const uploadAvatarMiddleware = createUploadMiddleware(procesarImagenAvatar);
 //# sourceMappingURL=upload.middleware.js.map

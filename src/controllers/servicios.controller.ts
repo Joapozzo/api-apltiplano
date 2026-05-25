@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { ServiciosService, type ServicioFilters } from "../services/servicios.service.js";
 import type { ApiErrorResponse } from "../types/api.types.js";
+import { parseParamId } from "../utils/express-helpers.js";
 
 export class ServiciosController {
   static async getAll(req: Request, res: Response) {
@@ -39,7 +40,7 @@ export class ServiciosController {
 
   static async getById(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
 
       if (!id) {
         const errorResponse: ApiErrorResponse = {
@@ -89,7 +90,7 @@ export class ServiciosController {
 
   static async update(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
       if (!id) {
         const errorResponse: ApiErrorResponse = {
           success: false,
@@ -112,7 +113,7 @@ export class ServiciosController {
 
   static async delete(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
       if (!id) {
         const errorResponse: ApiErrorResponse = {
           success: false,
@@ -135,7 +136,7 @@ export class ServiciosController {
 
   static async toggleActivo(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
       if (!id) {
         const errorResponse: ApiErrorResponse = {
           success: false,
@@ -158,7 +159,7 @@ export class ServiciosController {
 
   static async toggleDestacado(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = parseParamId(req.params.id);
       if (!id) {
         const errorResponse: ApiErrorResponse = {
           success: false,

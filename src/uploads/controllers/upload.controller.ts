@@ -2,11 +2,12 @@ import type { NextFunction, Request, Response } from "express";
 import { prisma } from "../../database/prisma.js";
 import { AppError } from "../../utils/app-error.js";
 import { UploadService } from "../services/upload.service.js";
+import { parseParamId } from "../../utils/express-helpers.js";
 
 export class UploadController {
   static async subirImagen(req: Request, res: Response, next: NextFunction) {
     try {
-      const idServicio = Number.parseInt(req.params.id_servicio ?? "", 10);
+      const idServicio = Number.parseInt(parseParamId(req.params.id_servicio), 10);
 
       if (!Number.isInteger(idServicio)) {
         throw new AppError("ID de servicio inválido", 400);
@@ -50,7 +51,7 @@ export class UploadController {
 
   static async eliminarImagen(req: Request, res: Response, next: NextFunction) {
     try {
-      const idServicio = Number.parseInt(req.params.id_servicio ?? "", 10);
+      const idServicio = Number.parseInt(parseParamId(req.params.id_servicio), 10);
       const publicId = typeof req.body.public_id === "string" ? req.body.public_id : "";
 
       if (!Number.isInteger(idServicio)) {
@@ -70,7 +71,7 @@ export class UploadController {
 
   static async subirFotoCoordinador(req: Request, res: Response, next: NextFunction) {
     try {
-      const idCoordinador = Number.parseInt(req.params.id_coordinador ?? "", 10);
+      const idCoordinador = Number.parseInt(parseParamId(req.params.id_coordinador), 10);
 
       if (!Number.isInteger(idCoordinador)) {
         throw new AppError("ID de coordinador inválido", 400);
@@ -100,7 +101,7 @@ export class UploadController {
 
   static async eliminarFotoCoordinador(req: Request, res: Response, next: NextFunction) {
     try {
-      const idCoordinador = Number.parseInt(req.params.id_coordinador ?? "", 10);
+      const idCoordinador = Number.parseInt(parseParamId(req.params.id_coordinador), 10);
 
       if (!Number.isInteger(idCoordinador)) {
         throw new AppError("ID de coordinador inválido", 400);
@@ -115,7 +116,7 @@ export class UploadController {
 
   static async getFotoCoordinador(req: Request, res: Response, next: NextFunction) {
     try {
-      const idCoordinador = Number.parseInt(req.params.id_coordinador ?? "", 10);
+      const idCoordinador = Number.parseInt(parseParamId(req.params.id_coordinador), 10);
 
       if (!Number.isInteger(idCoordinador)) {
         throw new AppError("ID de coordinador inválido", 400);
@@ -130,7 +131,7 @@ export class UploadController {
 
   static async getImagenesServicio(req: Request, res: Response, next: NextFunction) {
     try {
-      const idServicio = Number.parseInt(req.params.id_servicio ?? "", 10);
+      const idServicio = Number.parseInt(parseParamId(req.params.id_servicio), 10);
 
       if (!Number.isInteger(idServicio)) {
         throw new AppError("ID de servicio inválido", 400);

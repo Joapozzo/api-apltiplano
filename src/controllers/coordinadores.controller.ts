@@ -1,7 +1,9 @@
 import type { Request, Response } from "express";
+import { issueCsrfToken } from "../middlewares/csrf.js";
 import { CoordinadoresService } from "../services/coordinadores.service.js";
 import { z } from "zod";
 import type { ApiErrorResponse } from "../types/api.types.js";
+import { parseParamId } from "../utils/express-helpers.js";
 
 const createCoordinadorSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido"),
@@ -36,8 +38,9 @@ export class CoordinadoresController {
       if (search) filters.search = search;
 
       const result = await CoordinadoresService.list(filters);
+      const csrfToken = issueCsrfToken(req, res);
 
-      res.json(result);
+      res.json({ ...result, csrfToken });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Error al listar coordinadores";
       const err: ApiErrorResponse = { success: false, error: message };
@@ -47,7 +50,7 @@ export class CoordinadoresController {
 
   static async getById(req: Request, res: Response) {
     try {
-      const paramId = req.params.id;
+      const paramId = parseParamId(req.params.id);
       if (!paramId) {
         const err: ApiErrorResponse = { success: false, error: "ID inválido" };
         return res.status(400).json(err);
@@ -103,7 +106,7 @@ export class CoordinadoresController {
 
   static async update(req: Request, res: Response) {
     try {
-      const paramId = req.params.id;
+      const paramId = parseParamId(req.params.id);
       if (!paramId) {
         const err: ApiErrorResponse = { success: false, error: "ID inválido" };
         return res.status(400).json(err);
@@ -147,7 +150,7 @@ export class CoordinadoresController {
 
   static async delete(req: Request, res: Response) {
     try {
-      const paramId = req.params.id;
+      const paramId = parseParamId(req.params.id);
       if (!paramId) {
         const err: ApiErrorResponse = { success: false, error: "ID inválido" };
         return res.status(400).json(err);
@@ -172,7 +175,7 @@ export class CoordinadoresController {
 
   static async asignarAExpedicion(req: Request, res: Response) {
     try {
-      const paramId = req.params.id;
+      const paramId = parseParamId(req.params.id);
       if (!paramId) {
         const err: ApiErrorResponse = { success: false, error: "ID inválido" };
         return res.status(400).json(err);
@@ -208,8 +211,8 @@ export class CoordinadoresController {
 
   static async desasignarDeExpedicion(req: Request, res: Response) {
     try {
-      const paramId = req.params.id;
-      const paramIdExp = req.params.id_expedicion;
+      const paramId = parseParamId(req.params.id);
+      const paramIdExp = parseParamId(req.params.id_expedicion);
       if (!paramId || !paramIdExp) {
         const err: ApiErrorResponse = { success: false, error: "ID inválido" };
         return res.status(400).json(err);
@@ -235,7 +238,7 @@ export class CoordinadoresController {
 
   static async getHistorial(req: Request, res: Response) {
     try {
-      const paramId = req.params.id;
+      const paramId = parseParamId(req.params.id);
       if (!paramId) {
         const err: ApiErrorResponse = { success: false, error: "ID inválido" };
         return res.status(400).json(err);
