@@ -73,10 +73,7 @@ export class PublicSalidasController {
     }
 
     try {
-      const result = await PublicSalidasService.getDetalle(
-        paramParsed.data,
-        queryParsed.data.id_expedicion
-      );
+      const result = await PublicSalidasService.getDetalle(paramParsed.data, queryParsed.data.id_expedicion);
       res.json(result);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Error al obtener salida";

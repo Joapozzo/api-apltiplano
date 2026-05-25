@@ -8,14 +8,8 @@ import crypto from "crypto";
 import type { Prisma } from "@prisma/client";
 import { APP_ROLES } from "../types/auth.types.js";
 import { syncClienteFromUsuario } from "./usuarios.shared.js";
-import {
-  decryptClientePii,
-  decryptInscripcionRecord,
-} from "../utils/data-protection.js";
-import {
-  INSCRIPCION_ESTADOS,
-  normalizeInscripcionUpdate,
-} from "../utils/inscripcion-estado.js";
+import { decryptClientePii, decryptInscripcionRecord } from "../utils/data-protection.js";
+import { INSCRIPCION_ESTADOS, normalizeInscripcionUpdate } from "../utils/inscripcion-estado.js";
 import { ExpedicionesService } from "./expediciones.service.js";
 
 export interface CreateInscripcionData {
@@ -60,7 +54,7 @@ type ClienteResumen = {
 
 async function resolveOrCreateClienteForInscripcion(
   tx: Prisma.TransactionClient,
-  usuario: { nombre: string; apellido: string; email: string }
+  usuario: { nombre: string; apellido: string; email: string },
 ): Promise<ClienteResumen> {
   const email = usuario.email.trim().toLowerCase();
   const nombre = usuario.nombre.trim();
@@ -107,7 +101,7 @@ async function resolveOrCreateClienteForInscripcion(
   const cliente = await syncClienteFromUsuario(
     tx,
     { id_usuario: usuarioRow.id_usuario, email, nombre, apellido },
-    { ensureCliente: true, syncEmail: true }
+    { ensureCliente: true, syncEmail: true },
   );
 
   if (!cliente) {
@@ -123,12 +117,8 @@ async function resolveOrCreateClienteForInscripcion(
 }
 
 export class InscripcionesService {
-  static async generateLink(
-    id_expedicion: number,
-    id_cliente: number | null,
-    expiresInDays?: number
-  ) {
-    const diasToken = expiresInDays ?? await getInscripcionTokenDias();
+  static async generateLink(id_expedicion: number, id_cliente: number | null, expiresInDays?: number) {
+    const diasToken = expiresInDays ?? (await getInscripcionTokenDias());
     const expedicion = await prisma.expediciones.findFirst({
       where: { id_expedicion },
       include: {
@@ -374,8 +364,13 @@ export class InscripcionesService {
       };
     });
 
-    const emitResult = result as { success: boolean; inscripcion_id: number; cliente?: { nombre: string; apellido: string; email: string }; expedicion?: { servicios: { nombre: string; slug?: string }; fecha_salida: Date; fecha_fin: Date } };
-    
+    const emitResult = result as {
+      success: boolean;
+      inscripcion_id: number;
+      cliente?: { nombre: string; apellido: string; email: string };
+      expedicion?: { servicios: { nombre: string; slug?: string }; fecha_salida: Date; fecha_fin: Date };
+    };
+
     if (emitResult.success) {
       await emitInscripcionNueva({
         id_inscripcion: emitResult.inscripcion_id,

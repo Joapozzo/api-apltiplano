@@ -2,8 +2,9 @@ import type { Request, Response } from "express";
 import { issueCsrfToken } from "../middlewares/csrf.js";
 import { CoordinadoresService } from "../services/coordinadores.service.js";
 import { z } from "zod";
-import type { ApiErrorResponse } from "../types/api.types.js";
 import { parseParamId } from "../utils/express-helpers.js";
+import { asyncHandler } from "../middlewares/error-handler.js";
+import { AppError } from "../utils/app-error.js";
 
 const createCoordinadorSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido"),
@@ -27,237 +28,89 @@ const asignarExpedicionSchema = z.object({
   rol: z.string().min(1, "El rol es requerido"),
 });
 
+function parseId(req: Request): number {
+  const paramId = parseParamId(req.params.id);
+  if (!paramId) throw new AppError("ID inválido", 400);
+  const id = parseInt(paramId, 10);
+  if (isNaN(id)) throw new AppError("ID inválido", 400);
+  return id;
+}
+
 export class CoordinadoresController {
-  static async list(req: Request, res: Response) {
-    try {
-      const activo = req.query.activo === "true" ? true : req.query.activo === "false" ? false : undefined;
-      const search = typeof req.query.search === "string" ? req.query.search : undefined;
+  static list = asyncHandler(async (req: Request, res: Response) => {
+    const activo = req.query.activo === "true" ? true : req.query.activo === "false" ? false : undefined;
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
 
-      const filters: { activo?: boolean; search?: string } = {};
-      if (activo !== undefined) filters.activo = activo;
-      if (search) filters.search = search;
+    const filters: { activo?: boolean; search?: string } = {};
+    if (activo !== undefined) filters.activo = activo;
+    if (search) filters.search = search;
 
-      const result = await CoordinadoresService.list(filters);
-      const csrfToken = issueCsrfToken(req, res);
+    const result = await CoordinadoresService.list(filters);
+    const csrfToken = issueCsrfToken(req, res);
 
-      res.json({ ...result, csrfToken });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Error al listar coordinadores";
-      const err: ApiErrorResponse = { success: false, error: message };
-      res.status(500).json(err);
-    }
-  }
+    res.json({ ...result, csrfToken });
+  });
 
-  static async getById(req: Request, res: Response) {
-    try {
-      const paramId = parseParamId(req.params.id);
-      if (!paramId) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
-      const id = parseInt(paramId, 10);
+  static getById = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseId(req);
+    const result = await CoordinadoresService.getById(id);
+    res.json(result);
+  });
 
-      if (isNaN(id)) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
+  static create = asyncHandler(async (req: Request, res: Response) => {
+    const parsed = createCoordinadorSchema.parse(req.body);
+    const result = await CoordinadoresService.create({
+      nombre: parsed.nombre,
+      apellido: parsed.apellido,
+      dni: parsed.dni,
+      ...(parsed.certificaciones !== undefined && { certificaciones: parsed.certificaciones }),
+      ...(parsed.especialidades !== undefined && { especialidades: parsed.especialidades }),
+    });
 
-      const result = await CoordinadoresService.getById(id);
+    res.status(201).json(result);
+  });
 
-      res.json(result);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Error al obtener coordinador";
-      const err: ApiErrorResponse = { success: false, error: message };
-      const status = message === "Coordinador no encontrado" ? 404 : 500;
-      res.status(status).json(err);
-    }
-  }
+  static update = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseId(req);
+    const parsed = updateCoordinadorSchema.parse(req.body);
+    const updateData: Record<string, unknown> = {};
+    if (parsed.nombre !== undefined) updateData.nombre = parsed.nombre;
+    if (parsed.apellido !== undefined) updateData.apellido = parsed.apellido;
+    if (parsed.dni !== undefined) updateData.dni = parsed.dni;
+    if (parsed.certificaciones !== undefined) updateData.certificaciones = parsed.certificaciones;
+    if (parsed.especialidades !== undefined) updateData.especialidades = parsed.especialidades;
+    if (parsed.activo !== undefined) updateData.activo = parsed.activo;
+    const result = await CoordinadoresService.update(id, updateData as any);
+    res.json(result);
+  });
 
-  static async create(req: Request, res: Response) {
-    try {
-      const parsed = createCoordinadorSchema.safeParse(req.body);
+  static delete = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseId(req);
+    const result = await CoordinadoresService.delete(id);
+    res.json(result);
+  });
 
-      if (!parsed.success) {
-        const err: ApiErrorResponse = {
-          success: false,
-          error: "Datos inválidos",
-          message: parsed.error.issues.map((i) => i.message).join("; "),
-        };
-        return res.status(400).json(err);
-      }
+  static asignarAExpedicion = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseId(req);
+    const parsed = asignarExpedicionSchema.parse(req.body);
+    const result = await CoordinadoresService.asignarAExpedicion(id, parsed);
+    res.json(result);
+  });
 
-      const createData = parsed.data;
-      const result = await CoordinadoresService.create({
-        nombre: createData.nombre,
-        apellido: createData.apellido,
-        dni: createData.dni,
-        ...(createData.certificaciones !== undefined && { certificaciones: createData.certificaciones }),
-        ...(createData.especialidades !== undefined && { especialidades: createData.especialidades }),
-      });
+  static desasignarDeExpedicion = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseId(req);
+    const paramIdExp = parseParamId(req.params.id_expedicion);
+    if (!paramIdExp) throw new AppError("ID de expedición inválido", 400);
+    const id_expedicion = parseInt(paramIdExp, 10);
+    if (isNaN(id_expedicion)) throw new AppError("ID de expedición inválido", 400);
 
-      res.status(201).json(result);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Error al crear coordinador";
-      const err: ApiErrorResponse = { success: false, error: message };
-      const status = message.includes("Ya existe") ? 409 : 500;
-      res.status(status).json(err);
-    }
-  }
+    const result = await CoordinadoresService.desasignarDeExpedicion(id, id_expedicion);
+    res.json(result);
+  });
 
-  static async update(req: Request, res: Response) {
-    try {
-      const paramId = parseParamId(req.params.id);
-      if (!paramId) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
-      const id = parseInt(paramId, 10);
-
-      if (isNaN(id)) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
-
-      const parsed = updateCoordinadorSchema.safeParse(req.body);
-
-      if (!parsed.success) {
-        const err: ApiErrorResponse = {
-          success: false,
-          error: "Datos inválidos",
-          message: parsed.error.issues.map((i) => i.message).join("; "),
-        };
-        return res.status(400).json(err);
-      }
-
-      const updateData = parsed.data;
-      const result = await CoordinadoresService.update(id, {
-        ...(updateData.nombre !== undefined && { nombre: updateData.nombre }),
-        ...(updateData.apellido !== undefined && { apellido: updateData.apellido }),
-        ...(updateData.dni !== undefined && { dni: updateData.dni }),
-        ...(updateData.certificaciones !== undefined && { certificaciones: updateData.certificaciones }),
-        ...(updateData.especialidades !== undefined && { especialidades: updateData.especialidades }),
-        ...(updateData.activo !== undefined && { activo: updateData.activo }),
-      });
-
-      res.json(result);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Error al actualizar coordinador";
-      const err: ApiErrorResponse = { success: false, error: message };
-      const status = message === "Coordinador no encontrado" ? 404 : message.includes("Ya existe") ? 409 : 500;
-      res.status(status).json(err);
-    }
-  }
-
-  static async delete(req: Request, res: Response) {
-    try {
-      const paramId = parseParamId(req.params.id);
-      if (!paramId) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
-      const id = parseInt(paramId, 10);
-
-      if (isNaN(id)) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
-
-      const result = await CoordinadoresService.delete(id);
-
-      res.json(result);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Error al eliminar coordinador";
-      const err: ApiErrorResponse = { success: false, error: message };
-      const status = message === "Coordinador no encontrado" ? 404 : 500;
-      res.status(status).json(err);
-    }
-  }
-
-  static async asignarAExpedicion(req: Request, res: Response) {
-    try {
-      const paramId = parseParamId(req.params.id);
-      if (!paramId) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
-      const id = parseInt(paramId, 10);
-
-      if (isNaN(id)) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
-
-      const parsed = asignarExpedicionSchema.safeParse(req.body);
-
-      if (!parsed.success) {
-        const err: ApiErrorResponse = {
-          success: false,
-          error: "Datos inválidos",
-          message: parsed.error.issues.map((i) => i.message).join("; "),
-        };
-        return res.status(400).json(err);
-      }
-
-      const result = await CoordinadoresService.asignarAExpedicion(id, parsed.data);
-
-      res.json(result);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Error al asignar coordinador";
-      const err: ApiErrorResponse = { success: false, error: message };
-      const status = message.includes("no encontrado") ? 404 : message.includes("ya está") ? 409 : 500;
-      res.status(status).json(err);
-    }
-  }
-
-  static async desasignarDeExpedicion(req: Request, res: Response) {
-    try {
-      const paramId = parseParamId(req.params.id);
-      const paramIdExp = parseParamId(req.params.id_expedicion);
-      if (!paramId || !paramIdExp) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
-      const id = parseInt(paramId, 10);
-      const id_expedicion = parseInt(paramIdExp, 10);
-
-      if (isNaN(id) || isNaN(id_expedicion)) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
-
-      const result = await CoordinadoresService.desasignarDeExpedicion(id, id_expedicion);
-
-      res.json(result);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Error al desasignar coordinador";
-      const err: ApiErrorResponse = { success: false, error: message };
-      const status = message.includes("no encontrado") ? 404 : 500;
-      res.status(status).json(err);
-    }
-  }
-
-  static async getHistorial(req: Request, res: Response) {
-    try {
-      const paramId = parseParamId(req.params.id);
-      if (!paramId) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
-      const id = parseInt(paramId, 10);
-
-      if (isNaN(id)) {
-        const err: ApiErrorResponse = { success: false, error: "ID inválido" };
-        return res.status(400).json(err);
-      }
-
-      const result = await CoordinadoresService.getHistorial(id);
-
-      res.json(result);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Error al obtener historial";
-      const err: ApiErrorResponse = { success: false, error: message };
-      const status = message === "Coordinador no encontrado" ? 404 : 500;
-      res.status(status).json(err);
-    }
-  }
+  static getHistorial = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseId(req);
+    const result = await CoordinadoresService.getHistorial(id);
+    res.json(result);
+  });
 }

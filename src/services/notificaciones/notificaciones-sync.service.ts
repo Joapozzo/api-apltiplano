@@ -66,7 +66,7 @@ export async function syncAlertasOperativas(throttle = true): Promise<{ synced: 
     umbralCuposCriticos,
     diasPresupuestoAviso,
     diasSalidaProxima,
-    diasSalidaUrgente
+    diasSalidaUrgente,
   );
 
   const idsInscripciones = expediciones.flatMap((e) => e.inscripciones.map((i) => i.id_inscripcion));
@@ -80,7 +80,7 @@ export async function syncAlertasOperativas(throttle = true): Promise<{ synced: 
     },
   });
   const emergenciaIds = new Set(
-    inscripcionesConEmergencia.filter((i) => i.emergencia_nombre && i.emergencia_telefono).map((i) => i.id_inscripcion)
+    inscripcionesConEmergencia.filter((i) => i.emergencia_nombre && i.emergencia_telefono).map((i) => i.id_inscripcion),
   );
 
   const inscripcionesIncompletas = expediciones.flatMap((exp) =>
@@ -88,9 +88,10 @@ export async function syncAlertasOperativas(throttle = true): Promise<{ synced: 
       id_inscripcion: ins.id_inscripcion,
       clientes: ins.clientes,
       tiene_datos_medicos: Array.isArray(ins.inscripcion_datos_medicos) && ins.inscripcion_datos_medicos.length > 0,
-      tiene_actividad_fisica: Array.isArray(ins.inscripcion_actividad_fisica) && ins.inscripcion_actividad_fisica.length > 0,
+      tiene_actividad_fisica:
+        Array.isArray(ins.inscripcion_actividad_fisica) && ins.inscripcion_actividad_fisica.length > 0,
       tiene_emergencia: emergenciaIds.has(ins.id_inscripcion),
-    }))
+    })),
   );
 
   const reglasInsc = getInscripcionesIncompletasRules(inscripcionesIncompletas);
@@ -98,9 +99,10 @@ export async function syncAlertasOperativas(throttle = true): Promise<{ synced: 
   const allRules = [...reglasExp.nuevas, ...reglasInsc];
   const allArchivar = [...new Set([...reglasExp.archivar])];
 
-  const deleteOps = allArchivar.length > 0 
-    ? [prisma.notificaciones_admin.deleteMany({ where: { dedupe_key: { in: allArchivar } } })]
-    : [];
+  const deleteOps =
+    allArchivar.length > 0
+      ? [prisma.notificaciones_admin.deleteMany({ where: { dedupe_key: { in: allArchivar } } })]
+      : [];
 
   const upsertOps = allRules.map((rule) =>
     prisma.notificaciones_admin.upsert({
@@ -125,7 +127,7 @@ export async function syncAlertasOperativas(throttle = true): Promise<{ synced: 
         archivada: false,
         leida: false,
       } as any,
-    })
+    }),
   );
 
   await prisma.$transaction([...deleteOps, ...upsertOps]);

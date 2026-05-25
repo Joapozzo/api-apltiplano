@@ -82,7 +82,7 @@ export class ServiciosService {
         limit,
         pages: Math.ceil(total / limit),
       },
-    } as ApiPaginatedResponse<typeof servicios[0]>;
+    } as ApiPaginatedResponse<(typeof servicios)[0]>;
   }
 
   /**
@@ -239,7 +239,8 @@ export class ServiciosService {
         experiencia_requerida: data.experiencia_requerida !== undefined ? data.experiencia_requerida : null,
         horas_caminata_diarias: data.horas_caminata_diarias !== undefined ? data.horas_caminata_diarias : null,
         peso_mochila: data.peso_mochila !== undefined ? data.peso_mochila : null,
-        conocimientos_tecnicos_requeridos: data.conocimientos_tecnicos_requeridos !== undefined ? data.conocimientos_tecnicos_requeridos : false,
+        conocimientos_tecnicos_requeridos:
+          data.conocimientos_tecnicos_requeridos !== undefined ? data.conocimientos_tecnicos_requeridos : false,
         punto_encuentro: data.punto_encuentro !== undefined ? data.punto_encuentro : null,
         comodidades: data.comodidades !== undefined ? data.comodidades : null,
         briefing_info: data.briefing_info !== undefined ? data.briefing_info : null,
@@ -277,15 +278,15 @@ export class ServiciosService {
   static async delete(id: number) {
     const servicio = await prisma.servicios.findUnique({
       where: { id_servicio: id },
-    })
+    });
 
-    if (!servicio) { 
+    if (!servicio) {
       throw new Error("Servicio no encontrado");
     }
 
-    const expediciones = await prisma.expediciones.findMany({ 
+    const expediciones = await prisma.expediciones.findMany({
       where: { id_servicio: id },
-    })
+    });
 
     if (expediciones.length > 0) {
       throw new Error("No se puede eliminar el servicio porque tiene expediciones asociadas");
@@ -349,4 +350,3 @@ export class ServiciosService {
     } as ApiSuccessResponse<typeof updated>;
   }
 }
-

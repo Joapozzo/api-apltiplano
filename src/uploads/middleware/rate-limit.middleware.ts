@@ -7,7 +7,9 @@ import { getUploadMaxPorMes } from "../../utils/config-runtime.js";
 let uploadMaxPorMes = 50;
 
 getUploadMaxPorMes()
-  .then((val) => { uploadMaxPorMes = val; })
+  .then((val) => {
+    uploadMaxPorMes = val;
+  })
   .catch(() => {});
 
 export async function refreshUploadLimit() {

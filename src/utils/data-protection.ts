@@ -72,13 +72,7 @@ export function encryptSensitiveData(data: Record<string, unknown>): Record<stri
 
 /** @deprecated Usar decryptInscripcionPii / decryptClientePii */
 export function decryptSensitiveData(data: Record<string, unknown>): Record<string, unknown> {
-  return decryptObjectFields(data, [
-    ...INSCRIPCION_PII_FIELDS,
-    "nombre",
-    "apellido",
-    "email",
-    "telefono",
-  ]);
+  return decryptObjectFields(data, [...INSCRIPCION_PII_FIELDS, "nombre", "apellido", "email", "telefono"]);
 }
 
 export function encryptObjectFields(obj: Record<string, unknown>, fields: string[]): Record<string, unknown> {

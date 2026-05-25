@@ -161,7 +161,7 @@ export class ExpedicionesService {
         limit,
         pages: Math.ceil(total / limit),
       },
-    } as ApiPaginatedResponse<typeof expediciones[0]>;
+    } as ApiPaginatedResponse<(typeof expediciones)[0]>;
   }
 
   /**
@@ -219,10 +219,7 @@ export class ExpedicionesService {
   static async getActive() {
     const expediciones = await prisma.expediciones.findMany({
       where: {
-        OR: [
-          { estado: "A" },
-          { estado: "Activa" },
-        ],
+        OR: [{ estado: "A" }, { estado: "Activa" }],
       },
       include: {
         servicios: {
@@ -270,12 +267,9 @@ export class ExpedicionesService {
       throw new Error("Debe agregar al menos un precio");
     }
 
-    const [estadoInicial, diasValidez] = await Promise.all([
-      getExpedicionEstadoInicial(),
-      getPresupuestoDiasValidez(),
-    ]);
+    const [estadoInicial, diasValidez] = await Promise.all([getExpedicionEstadoInicial(), getPresupuestoDiasValidez()]);
 
-    let presupuestoHasta: Date | null = null;
+    let presupuestoHasta: Date | null;
     if (data.presupuesto_valido_hasta) {
       presupuestoHasta = new Date(data.presupuesto_valido_hasta);
     } else {
@@ -336,7 +330,7 @@ export class ExpedicionesService {
     // Validar que no se reducen cupos por debajo de los ocupados
     if (data.cupos_disponibles < existente.cupos_ocupados) {
       throw new Error(
-        `No se pueden reducir los cupos a ${data.cupos_disponibles}. Ya hay ${existente.cupos_ocupados} inscripciones confirmadas.`
+        `No se pueden reducir los cupos a ${data.cupos_disponibles}. Ya hay ${existente.cupos_ocupados} inscripciones confirmadas.`,
       );
     }
 
@@ -364,9 +358,7 @@ export class ExpedicionesService {
           fecha_fin: fechaFin,
           cupos_disponibles: data.cupos_disponibles,
           estado: data.estado,
-          presupuesto_valido_hasta: data.presupuesto_valido_hasta
-            ? new Date(data.presupuesto_valido_hasta)
-            : null,
+          presupuesto_valido_hasta: data.presupuesto_valido_hasta ? new Date(data.presupuesto_valido_hasta) : null,
           expedicion_precios: {
             create: data.precios.map((p) => ({
               nombre_paquete: p.nombre_paquete,
@@ -400,7 +392,7 @@ export class ExpedicionesService {
     // Verificar que existe
     const existente = await prisma.expediciones.findUnique({
       where: { id_expedicion: id },
-      include: { 
+      include: {
         inscripciones: true,
         servicios: { select: { nombre: true } },
       },
@@ -411,13 +403,11 @@ export class ExpedicionesService {
     }
 
     // Verificar si tiene inscripciones activas
-    const inscripcionesActivas = existente.inscripciones.filter(
-      (i) => i.estado !== "Cancelado"
-    );
+    const inscripcionesActivas = existente.inscripciones.filter((i) => i.estado !== "Cancelado");
 
     if (inscripcionesActivas.length > 0) {
       throw new Error(
-        `No se puede eliminar la expedición "${existente.servicios.nombre}". Tiene ${inscripcionesActivas.length} inscripción(es) activa(s).`
+        `No se puede eliminar la expedición "${existente.servicios.nombre}". Tiene ${inscripcionesActivas.length} inscripción(es) activa(s).`,
       );
     }
 
@@ -477,11 +467,7 @@ export class ExpedicionesService {
       where: {
         id_expedicion,
         estado: {
-          in: [
-            INSCRIPCION_ESTADOS.CONFIRMADO,
-            INSCRIPCION_ESTADOS.INSCRIPTO,
-            INSCRIPCION_ESTADOS.PENDIENTE,
-          ],
+          in: [INSCRIPCION_ESTADOS.CONFIRMADO, INSCRIPCION_ESTADOS.INSCRIPTO, INSCRIPCION_ESTADOS.PENDIENTE],
         },
       },
     });

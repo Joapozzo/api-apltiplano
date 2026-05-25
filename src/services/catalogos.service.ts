@@ -22,18 +22,10 @@ function mapCatalogosWriteError(error: unknown, entityLabel: string): never {
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
-      throw new CatalogosServiceError(
-        `Ya existe un/a ${entityLabel} con esos datos`,
-        409,
-        "DUPLICATE_ENTRY"
-      );
+      throw new CatalogosServiceError(`Ya existe un/a ${entityLabel} con esos datos`, 409, "DUPLICATE_ENTRY");
     }
     if (error.code === "P2003") {
-      throw new CatalogosServiceError(
-        "La ubicación seleccionada no existe",
-        400,
-        "INVALID_UBICACION"
-      );
+      throw new CatalogosServiceError("La ubicación seleccionada no existe", 400, "INVALID_UBICACION");
     }
   }
 
@@ -104,12 +96,7 @@ export async function getUbicacionById(id: number) {
   return { success: true, data: ubicacion } as ApiSuccessResponse<typeof ubicacion>;
 }
 
-export async function createUbicacion(data: {
-  pais: string;
-  provincia: string;
-  zona: string;
-  orden?: number;
-}) {
+export async function createUbicacion(data: { pais: string; provincia: string; zona: string; orden?: number }) {
   try {
     const created = await prisma.ubicaciones.create({
       data: {
@@ -126,13 +113,16 @@ export async function createUbicacion(data: {
   }
 }
 
-export async function updateUbicacion(id: number, data: Partial<{
-  pais: string;
-  provincia: string;
-  zona: string;
-  orden: number;
-  activo: boolean;
-}>) {
+export async function updateUbicacion(
+  id: number,
+  data: Partial<{
+    pais: string;
+    provincia: string;
+    zona: string;
+    orden: number;
+    activo: boolean;
+  }>,
+) {
   const updateData: Record<string, unknown> = {};
   if (data.pais !== undefined) updateData.pais = data.pais.trim();
   if (data.provincia !== undefined) updateData.provincia = data.provincia.trim();
@@ -225,15 +215,18 @@ export async function createLugar(data: {
   }
 }
 
-export async function updateLugar(id: number, data: Partial<{
-  nombre: string;
-  id_ubicacion: number;
-  tipo_lugar: string;
-  altitud: number;
-  descripcion: string | null;
-  orden: number;
-  activo: boolean;
-}>) {
+export async function updateLugar(
+  id: number,
+  data: Partial<{
+    nombre: string;
+    id_ubicacion: number;
+    tipo_lugar: string;
+    altitud: number;
+    descripcion: string | null;
+    orden: number;
+    activo: boolean;
+  }>,
+) {
   const updateData: Record<string, unknown> = {};
   if (data.nombre !== undefined) updateData.nombre = data.nombre.trim();
   if (data.id_ubicacion !== undefined) updateData.id_ubicacion = data.id_ubicacion;
@@ -294,11 +287,7 @@ export async function getActividadById(id: number) {
   return { success: true, data: actividad } as ApiSuccessResponse<typeof actividad>;
 }
 
-export async function createActividad(data: {
-  nombre: string;
-  descripcion?: string | null;
-  orden?: number;
-}) {
+export async function createActividad(data: { nombre: string; descripcion?: string | null; orden?: number }) {
   try {
     const created = await prisma.actividades.create({
       data: {
@@ -314,12 +303,15 @@ export async function createActividad(data: {
   }
 }
 
-export async function updateActividad(id: number, data: Partial<{
-  nombre: string;
-  descripcion: string | null;
-  orden: number;
-  activo: boolean;
-}>) {
+export async function updateActividad(
+  id: number,
+  data: Partial<{
+    nombre: string;
+    descripcion: string | null;
+    orden: number;
+    activo: boolean;
+  }>,
+) {
   const updateData: Record<string, unknown> = {};
   if (data.nombre !== undefined) updateData.nombre = data.nombre.trim();
   if (data.descripcion !== undefined) updateData.descripcion = data.descripcion?.trim() || null;
@@ -376,11 +368,7 @@ export async function getDificultadById(id: number) {
   return { success: true, data: dificultad } as ApiSuccessResponse<typeof dificultad>;
 }
 
-export async function createDificultad(data: {
-  nivel: string;
-  descripcion?: string | null;
-  orden?: number;
-}) {
+export async function createDificultad(data: { nivel: string; descripcion?: string | null; orden?: number }) {
   try {
     const created = await prisma.dificultades.create({
       data: {
@@ -396,12 +384,15 @@ export async function createDificultad(data: {
   }
 }
 
-export async function updateDificultad(id: number, data: Partial<{
-  nivel: string;
-  descripcion: string | null;
-  orden: number;
-  activo: boolean;
-}>) {
+export async function updateDificultad(
+  id: number,
+  data: Partial<{
+    nivel: string;
+    descripcion: string | null;
+    orden: number;
+    activo: boolean;
+  }>,
+) {
   const updateData: Record<string, unknown> = {};
   if (data.nivel !== undefined) updateData.nivel = data.nivel.trim();
   if (data.descripcion !== undefined) updateData.descripcion = data.descripcion?.trim() || null;
@@ -441,7 +432,11 @@ export async function deleteDificultad(id: number) {
 export async function getCatalogosCompletos() {
   const [ubicaciones, lugares, actividades, dificultades, items] = await Promise.all([
     prisma.ubicaciones.findMany({ where: { activo: true }, orderBy: { orden: "asc" } }),
-    prisma.lugares.findMany({ where: { activo: true }, include: { ubicaciones: { select: { pais: true, provincia: true, zona: true } } }, orderBy: { nombre: "asc" } }),
+    prisma.lugares.findMany({
+      where: { activo: true },
+      include: { ubicaciones: { select: { pais: true, provincia: true, zona: true } } },
+      orderBy: { nombre: "asc" },
+    }),
     prisma.actividades.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
     prisma.dificultades.findMany({ where: { activo: true }, orderBy: { id_dificultad: "asc" } }),
     prisma.items_servicio.findMany({ where: { activo: true }, orderBy: { nombre: "asc" }, take: 100 }),

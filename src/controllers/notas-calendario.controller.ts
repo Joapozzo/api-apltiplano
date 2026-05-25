@@ -8,6 +8,7 @@ import {
   toggleCompletada,
   updateNota,
 } from "../services/notas-calendario.service.js";
+import { asyncHandler } from "../middlewares/error-handler.js";
 import { AppError } from "../utils/app-error.js";
 
 function parseOptionalDate(value: unknown) {
@@ -44,261 +45,141 @@ function getAuthenticatedUserId(req: Request) {
   return req.auth.id_usuario;
 }
 
-function handleNotasError(error: unknown, res: Response, fallbackMessage: string) {
-  if (error instanceof AppError) {
-    return res.status(error.statusCode).json({
-      success: false,
-      error: error.message,
-    });
-  }
-
-  return res.status(500).json({
-    success: false,
-    error: fallbackMessage,
-  });
-}
-
 export class NotasCalendarioController {
-  static async getNotas(req: Request, res: Response) {
-    try {
-      const idUsuario = getAuthenticatedUserId(req);
-      const completada =
-        typeof req.query.completada === "string"
-          ? req.query.completada === "true"
-          : undefined;
-      const filtros: {
-        id_usuario: number;
-        fecha_desde?: Date;
-        fecha_hasta?: Date;
-        tipo?: string;
-        completada?: boolean;
-      } = {
-        id_usuario: idUsuario,
-      };
+  static getNotas = asyncHandler(async (req: Request, res: Response) => {
+    const idUsuario = getAuthenticatedUserId(req);
+    const completada = typeof req.query.completada === "string" ? req.query.completada === "true" : undefined;
+    const filtros: {
+      id_usuario: number;
+      fecha_desde?: Date;
+      fecha_hasta?: Date;
+      tipo?: string;
+      completada?: boolean;
+    } = {
+      id_usuario: idUsuario,
+    };
 
-      const fechaDesde = parseOptionalDate(req.query.fecha_desde);
-      const fechaHasta = parseOptionalDate(req.query.fecha_hasta);
-      const tipo = typeof req.query.tipo === "string" ? req.query.tipo : undefined;
+    const fechaDesde = parseOptionalDate(req.query.fecha_desde);
+    const fechaHasta = parseOptionalDate(req.query.fecha_hasta);
+    const tipo = typeof req.query.tipo === "string" ? req.query.tipo : undefined;
 
-      if (fechaDesde) {
-        filtros.fecha_desde = fechaDesde;
-      }
+    if (fechaDesde) filtros.fecha_desde = fechaDesde;
+    if (fechaHasta) filtros.fecha_hasta = fechaHasta;
+    if (tipo) filtros.tipo = tipo;
+    if (typeof completada === "boolean") filtros.completada = completada;
 
-      if (fechaHasta) {
-        filtros.fecha_hasta = fechaHasta;
-      }
+    const data = await getNotas(filtros);
+    res.json({ success: true, data });
+  });
 
-      if (tipo) {
-        filtros.tipo = tipo;
-      }
+  static getNotasByMes = asyncHandler(async (req: Request, res: Response) => {
+    const idUsuario = getAuthenticatedUserId(req);
+    const anio = Number(req.params.anio);
+    const mes = Number(req.params.mes);
 
-      if (typeof completada === "boolean") {
-        filtros.completada = completada;
-      }
-
-      const data = await getNotas(filtros);
-
-      return res.json({
-        success: true,
-        data,
-      });
-    } catch (error) {
-      return handleNotasError(error, res, "No se pudieron obtener las notas");
+    if (!Number.isInteger(anio) || !Number.isInteger(mes) || mes < 1 || mes > 12) {
+      throw new AppError("Parámetros de mes inválidos", 400);
     }
-  }
 
-  static async getNotasByMes(req: Request, res: Response) {
-    try {
-      const idUsuario = getAuthenticatedUserId(req);
-      const anio = Number(req.params.anio);
-      const mes = Number(req.params.mes);
+    const data = await getNotasByMes(anio, mes, idUsuario);
+    res.json({ success: true, data });
+  });
 
-      if (!Number.isInteger(anio) || !Number.isInteger(mes) || mes < 1 || mes > 12) {
-        throw new AppError("Parámetros de mes inválidos", 400);
-      }
+  static getNotaById = asyncHandler(async (req: Request, res: Response) => {
+    const idUsuario = getAuthenticatedUserId(req);
+    const id = Number(req.params.id);
 
-      const data = await getNotasByMes(anio, mes, idUsuario);
+    if (!Number.isInteger(id)) throw new AppError("ID de nota inválido", 400);
 
-      return res.json({
-        success: true,
-        data,
-      });
-    } catch (error) {
-      return handleNotasError(error, res, "No se pudieron obtener las notas del mes");
+    const data = await getNotaById(id, idUsuario);
+    res.json({ success: true, data });
+  });
+
+  static createNota = asyncHandler(async (req: Request, res: Response) => {
+    const idUsuario = getAuthenticatedUserId(req);
+
+    if (!req.body.titulo || typeof req.body.titulo !== "string") {
+      throw new AppError("El título es obligatorio", 400);
     }
-  }
-
-  static async getNotaById(req: Request, res: Response) {
-    try {
-      const idUsuario = getAuthenticatedUserId(req);
-      const id = Number(req.params.id);
-
-      if (!Number.isInteger(id)) {
-        throw new AppError("ID de nota inválido", 400);
-      }
-
-      const data = await getNotaById(id, idUsuario);
-
-      return res.json({
-        success: true,
-        data,
-      });
-    } catch (error) {
-      return handleNotasError(error, res, "No se pudo obtener la nota");
+    if (!["nota", "recordatorio", "tarea"].includes(String(req.body.tipo))) {
+      throw new AppError("El tipo de nota es inválido", 400);
     }
-  }
 
-  static async createNota(req: Request, res: Response) {
-    try {
-      const idUsuario = getAuthenticatedUserId(req);
+    const payload: {
+      titulo: string;
+      fecha: Date;
+      tipo: "nota" | "recordatorio" | "tarea";
+      descripcion?: string;
+      fecha_fin?: Date;
+      color?: string;
+      todo_el_dia?: boolean;
+    } = {
+      titulo: String(req.body.titulo ?? "").trim(),
+      fecha: parseRequiredDate(req.body.fecha, "fecha"),
+      tipo: req.body.tipo,
+    };
 
-      if (!req.body.titulo || typeof req.body.titulo !== "string") {
-        throw new AppError("El título es obligatorio", 400);
-      }
+    if (typeof req.body.descripcion === "string") payload.descripcion = req.body.descripcion;
 
-      if (!["nota", "recordatorio", "tarea"].includes(String(req.body.tipo))) {
-        throw new AppError("El tipo de nota es inválido", 400);
-      }
+    const fechaFin = parseOptionalDate(req.body.fecha_fin);
+    if (fechaFin) payload.fecha_fin = fechaFin;
+    if (typeof req.body.color === "string") payload.color = req.body.color;
+    if (typeof req.body.todo_el_dia === "boolean") payload.todo_el_dia = req.body.todo_el_dia;
 
-      const payload: {
-        titulo: string;
-        fecha: Date;
-        tipo: "nota" | "recordatorio" | "tarea";
-        descripcion?: string;
-        fecha_fin?: Date;
-        color?: string;
-        todo_el_dia?: boolean;
-      } = {
-        titulo: String(req.body.titulo ?? "").trim(),
-        fecha: parseRequiredDate(req.body.fecha, "fecha"),
-        tipo: req.body.tipo,
-      };
+    const data = await createNota(payload, idUsuario);
+    res.status(201).json({ success: true, data });
+  });
 
-      if (typeof req.body.descripcion === "string") {
-        payload.descripcion = req.body.descripcion;
-      }
+  static updateNota = asyncHandler(async (req: Request, res: Response) => {
+    const idUsuario = getAuthenticatedUserId(req);
+    const id = Number(req.params.id);
 
-      const fechaFin = parseOptionalDate(req.body.fecha_fin);
-      if (fechaFin) {
-        payload.fecha_fin = fechaFin;
-      }
-
-      if (typeof req.body.color === "string") {
-        payload.color = req.body.color;
-      }
-
-      if (typeof req.body.todo_el_dia === "boolean") {
-        payload.todo_el_dia = req.body.todo_el_dia;
-      }
-
-      const data = await createNota(payload, idUsuario);
-
-      return res.status(201).json({
-        success: true,
-        data,
-      });
-    } catch (error) {
-      return handleNotasError(error, res, "No se pudo crear la nota");
+    if (!Number.isInteger(id)) throw new AppError("ID de nota inválido", 400);
+    if (req.body.tipo && !["nota", "recordatorio", "tarea"].includes(String(req.body.tipo))) {
+      throw new AppError("El tipo de nota es inválido", 400);
     }
-  }
 
-  static async updateNota(req: Request, res: Response) {
-    try {
-      const idUsuario = getAuthenticatedUserId(req);
-      const id = Number(req.params.id);
+    const payload: {
+      titulo?: string;
+      descripcion?: string;
+      fecha?: Date;
+      fecha_fin?: Date;
+      tipo?: "nota" | "recordatorio" | "tarea";
+      color?: string;
+      todo_el_dia?: boolean;
+    } = {};
 
-      if (!Number.isInteger(id)) {
-        throw new AppError("ID de nota inválido", 400);
-      }
+    if (typeof req.body.titulo === "string") payload.titulo = req.body.titulo;
+    if (typeof req.body.descripcion === "string") payload.descripcion = req.body.descripcion;
+    if (req.body.fecha) payload.fecha = parseRequiredDate(req.body.fecha, "fecha");
 
-      if (req.body.tipo && !["nota", "recordatorio", "tarea"].includes(String(req.body.tipo))) {
-        throw new AppError("El tipo de nota es inválido", 400);
-      }
+    const fechaFin = parseOptionalDate(req.body.fecha_fin);
+    if (fechaFin) payload.fecha_fin = fechaFin;
+    if (req.body.tipo) payload.tipo = req.body.tipo;
+    if (typeof req.body.color === "string") payload.color = req.body.color;
+    if (typeof req.body.todo_el_dia === "boolean") payload.todo_el_dia = req.body.todo_el_dia;
 
-      const payload: {
-        titulo?: string;
-        descripcion?: string;
-        fecha?: Date;
-        fecha_fin?: Date;
-        tipo?: "nota" | "recordatorio" | "tarea";
-        color?: string;
-        todo_el_dia?: boolean;
-      } = {};
+    const data = await updateNota(id, payload, idUsuario);
+    res.json({ success: true, data });
+  });
 
-      if (typeof req.body.titulo === "string") {
-        payload.titulo = req.body.titulo;
-      }
+  static toggleCompletada = asyncHandler(async (req: Request, res: Response) => {
+    const idUsuario = getAuthenticatedUserId(req);
+    const id = Number(req.params.id);
 
-      if (typeof req.body.descripcion === "string") {
-        payload.descripcion = req.body.descripcion;
-      }
+    if (!Number.isInteger(id)) throw new AppError("ID de nota inválido", 400);
 
-      if (req.body.fecha) {
-        payload.fecha = parseRequiredDate(req.body.fecha, "fecha");
-      }
+    const data = await toggleCompletada(id, idUsuario);
+    res.json({ success: true, data });
+  });
 
-      const fechaFin = parseOptionalDate(req.body.fecha_fin);
-      if (fechaFin) {
-        payload.fecha_fin = fechaFin;
-      }
+  static deleteNota = asyncHandler(async (req: Request, res: Response) => {
+    const idUsuario = getAuthenticatedUserId(req);
+    const id = Number(req.params.id);
 
-      if (req.body.tipo) {
-        payload.tipo = req.body.tipo;
-      }
+    if (!Number.isInteger(id)) throw new AppError("ID de nota inválido", 400);
 
-      if (typeof req.body.color === "string") {
-        payload.color = req.body.color;
-      }
-
-      if (typeof req.body.todo_el_dia === "boolean") {
-        payload.todo_el_dia = req.body.todo_el_dia;
-      }
-
-      const data = await updateNota(id, payload, idUsuario);
-
-      return res.json({
-        success: true,
-        data,
-      });
-    } catch (error) {
-      return handleNotasError(error, res, "No se pudo actualizar la nota");
-    }
-  }
-
-  static async toggleCompletada(req: Request, res: Response) {
-    try {
-      const idUsuario = getAuthenticatedUserId(req);
-      const id = Number(req.params.id);
-
-      if (!Number.isInteger(id)) {
-        throw new AppError("ID de nota inválido", 400);
-      }
-
-      const data = await toggleCompletada(id, idUsuario);
-
-      return res.json({
-        success: true,
-        data,
-      });
-    } catch (error) {
-      return handleNotasError(error, res, "No se pudo actualizar el estado de la nota");
-    }
-  }
-
-  static async deleteNota(req: Request, res: Response) {
-    try {
-      const idUsuario = getAuthenticatedUserId(req);
-      const id = Number(req.params.id);
-
-      if (!Number.isInteger(id)) {
-        throw new AppError("ID de nota inválido", 400);
-      }
-
-      const data = await deleteNota(id, idUsuario);
-
-      return res.json(data);
-    } catch (error) {
-      return handleNotasError(error, res, "No se pudo eliminar la nota");
-    }
-  }
+    const data = await deleteNota(id, idUsuario);
+    res.json(data);
+  });
 }

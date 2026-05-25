@@ -1,10 +1,7 @@
 import type { Request, Response } from "express";
 import { PublicServiciosService } from "../services/public-servicios.service.js";
 import type { ApiErrorResponse } from "../types/api.types.js";
-import {
-  serviciosCatalogQuerySchema,
-  salidaIdentificadorParamSchema,
-} from "../types/public-salidas.dto.js";
+import { serviciosCatalogQuerySchema, salidaIdentificadorParamSchema } from "../types/public-salidas.dto.js";
 
 export class PublicServiciosController {
   static async list(req: Request, res: Response) {

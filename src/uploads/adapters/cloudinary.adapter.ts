@@ -19,11 +19,7 @@ if (process.env.CLOUDINARY_API_SECRET) {
 cloudinary.config(cloudinaryConfig);
 
 function assertCloudinaryConfig() {
-  if (
-    !process.env.CLOUDINARY_CLOUD_NAME ||
-    !process.env.CLOUDINARY_API_KEY ||
-    !process.env.CLOUDINARY_API_SECRET
-  ) {
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
     throw new AppError("Cloudinary no esta configurado correctamente", 500);
   }
 }
@@ -43,24 +39,21 @@ async function upload(payload: UploadPayload): Promise<UploadResult> {
       uploadOptions.public_id = payload.public_id;
     }
 
-    const stream = cloudinary.uploader.upload_stream(
-      uploadOptions,
-      (error, result) => {
-        if (error || !result) {
-          reject(new AppError("No se pudo subir la imagen a Cloudinary", 500));
-          return;
-        }
-
-        resolve({
-          url: result.secure_url,
-          public_id: result.public_id,
-          width: result.width ?? 0,
-          height: result.height ?? 0,
-          formato: result.format ?? "webp",
-          bytes: result.bytes ?? 0,
-        });
+    const stream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
+      if (error || !result) {
+        reject(new AppError("No se pudo subir la imagen a Cloudinary", 500));
+        return;
       }
-    );
+
+      resolve({
+        url: result.secure_url,
+        public_id: result.public_id,
+        width: result.width ?? 0,
+        height: result.height ?? 0,
+        formato: result.format ?? "webp",
+        bytes: result.bytes ?? 0,
+      });
+    });
 
     stream.end(payload.buffer);
   });

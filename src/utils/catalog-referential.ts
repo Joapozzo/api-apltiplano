@@ -23,7 +23,7 @@ export async function assertUbicacionDeletable(id: number): Promise<void> {
     throw new CatalogosServiceError(
       `No se puede eliminar la ubicación porque tiene ${count} lugar(es) asociado(s)`,
       409,
-      "CATALOG_IN_USE"
+      "CATALOG_IN_USE",
     );
   }
 }
@@ -37,7 +37,7 @@ export async function assertLugarDeletable(id: number): Promise<void> {
     throw new CatalogosServiceError(
       `No se puede eliminar el lugar porque está asociado a ${count} servicio(s)`,
       409,
-      "CATALOG_IN_USE"
+      "CATALOG_IN_USE",
     );
   }
 }
@@ -51,7 +51,7 @@ export async function assertActividadDeletable(id: number): Promise<void> {
     throw new CatalogosServiceError(
       `No se puede eliminar la actividad porque está asociada a ${count} servicio(s)`,
       409,
-      "CATALOG_IN_USE"
+      "CATALOG_IN_USE",
     );
   }
 }
@@ -61,7 +61,7 @@ export async function assertDificultadDeletable(id: number): Promise<void> {
     throw new CatalogosServiceError(
       "No se puede eliminar la dificultad porque es del sistema (ids 1-3)",
       403,
-      "CATALOG_PROTECTED"
+      "CATALOG_PROTECTED",
     );
   }
 
@@ -73,53 +73,44 @@ export async function assertDificultadDeletable(id: number): Promise<void> {
     throw new CatalogosServiceError(
       `No se puede eliminar la dificultad porque está asociada a ${count} servicio(s)`,
       409,
-      "CATALOG_IN_USE"
+      "CATALOG_IN_USE",
     );
   }
 }
 
 export async function assertCatalogoActivo(
   tipo: "actividades" | "dificultades" | "lugares" | "ubicaciones",
-  id: number
+  id: number,
 ): Promise<void> {
   let activo: boolean | null = null;
 
-  switch (tipo) {
-    case "actividades":
-      const actividad = await prisma.actividades.findUnique({
-        where: { id_actividad: id },
-        select: { activo: true },
-      });
-      activo = actividad?.activo ?? null;
-      break;
-    case "dificultades":
-      const dificultad = await prisma.dificultades.findUnique({
-        where: { id_dificultad: id },
-        select: { activo: true },
-      });
-      activo = dificultad?.activo ?? null;
-      break;
-    case "lugares":
-      const lugar = await prisma.lugares.findUnique({
-        where: { id_lugar: id },
-        select: { activo: true },
-      });
-      activo = lugar?.activo ?? null;
-      break;
-    case "ubicaciones":
-      const ubicacion = await prisma.ubicaciones.findUnique({
-        where: { id_ubicacion: id },
-        select: { activo: true },
-      });
-      activo = ubicacion?.activo ?? null;
-      break;
+  if (tipo === "actividades") {
+    const actividad = await prisma.actividades.findUnique({
+      where: { id_actividad: id },
+      select: { activo: true },
+    });
+    activo = actividad?.activo ?? null;
+  } else if (tipo === "dificultades") {
+    const dificultad = await prisma.dificultades.findUnique({
+      where: { id_dificultad: id },
+      select: { activo: true },
+    });
+    activo = dificultad?.activo ?? null;
+  } else if (tipo === "lugares") {
+    const lugar = await prisma.lugares.findUnique({
+      where: { id_lugar: id },
+      select: { activo: true },
+    });
+    activo = lugar?.activo ?? null;
+  } else if (tipo === "ubicaciones") {
+    const ubicacion = await prisma.ubicaciones.findUnique({
+      where: { id_ubicacion: id },
+      select: { activo: true },
+    });
+    activo = ubicacion?.activo ?? null;
   }
 
   if (activo === false) {
-    throw new CatalogosServiceError(
-      `El ${tipo.slice(0, -1)} seleccionado está inactivo`,
-      400,
-      "CATALOG_INACTIVE"
-    );
+    throw new CatalogosServiceError(`El ${tipo.slice(0, -1)} seleccionado está inactivo`, 400, "CATALOG_INACTIVE");
   }
 }

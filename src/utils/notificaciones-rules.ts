@@ -37,7 +37,7 @@ export function getNotificacionesRules(
   umbral_cupos_criticos: number = UMBRALES_DEFAULT.umbral_cupos_criticos,
   dias_presupuesto_aviso: number = UMBRALES_DEFAULT.dias_presupuesto_aviso,
   dias_salida_proxima: number = UMBRALES_DEFAULT.dias_salida_proxima,
-  dias_salida_urgente: number = UMBRALES_DEFAULT.dias_salida_urgente
+  dias_salida_urgente: number = UMBRALES_DEFAULT.dias_salida_urgente,
 ): { nuevas: NotificacionRule[]; archivar: string[] } {
   const nuevas: NotificacionRule[] = [];
   const archivar: string[] = [];
@@ -116,7 +116,9 @@ export function getNotificacionesRules(
       }
     }
 
-    const diasHastaSalida = Math.floor((new Date(exp.fecha_salida).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const diasHastaSalida = Math.floor(
+      (new Date(exp.fecha_salida).getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
     if (diasHastaSalida >= 0 && diasHastaSalida <= dias_salida_urgente) {
       nuevas.push({
@@ -154,7 +156,7 @@ export function getInscripcionesIncompletasRules(
     tiene_datos_medicos: boolean;
     tiene_actividad_fisica: boolean;
     tiene_emergencia: boolean;
-  }>
+  }>,
 ): NotificacionRule[] {
   const nuevas: NotificacionRule[] = [];
 

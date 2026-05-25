@@ -42,4 +42,3 @@ export interface PaginatedResponse<T> {
  * Respuesta de API con paginación
  */
 export type ApiPaginatedResponse<T> = ApiSuccessResponse<PaginatedResponse<T>>;
-

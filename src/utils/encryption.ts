@@ -9,7 +9,7 @@ function getEncryptionKey(): Buffer | null {
   if (!key || key.length !== 64) {
     return null;
   }
-  
+
   try {
     const keyBuffer = Buffer.from(key, "hex");
     if (keyBuffer.length !== 32) {
@@ -27,59 +27,63 @@ export function isEncryptionAvailable(): boolean {
 
 export function encrypt(plaintext: string): string {
   if (!plaintext) return "";
-  
+
   const key = getEncryptionKey();
   if (!key) {
-    return plaintext;
+    throw new Error(
+      "ENCRYPTION_KEY is not configured — cannot encrypt sensitive data. " +
+        "Set ENCRYPTION_KEY in your .env file (64 hex chars). " +
+        "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
+    );
   }
-  
+
   const iv = crypto.randomBytes(IV_LENGTH);
-  
+
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv, {
     authTagLength: AUTH_TAG_LENGTH,
   });
-  
+
   let encrypted = cipher.update(plaintext, "utf8", "hex");
   encrypted += cipher.final("hex");
-  
+
   const authTag = cipher.getAuthTag();
-  
+
   return `${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted}`;
 }
 
 export function decrypt(encryptedData: string): string {
   if (!encryptedData) return "";
-  
+
   const parts = encryptedData.split(":");
   if (parts.length !== 3) {
     return encryptedData;
   }
-  
+
   const ivHex = parts[0];
   const authTagHex = parts[1];
   const ciphertext = parts[2];
-  
+
   if (!ivHex || !authTagHex || !ciphertext) {
     return encryptedData;
   }
-  
+
   const key = getEncryptionKey();
   if (!key) {
     return encryptedData;
   }
-  
+
   try {
     const iv = Buffer.from(ivHex, "hex");
     const authTag = Buffer.from(authTagHex, "hex");
-    
+
     const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, {
       authTagLength: AUTH_TAG_LENGTH,
     });
-    
+
     decipher.setAuthTag(authTag);
-    
+
     const decrypted = decipher.update(ciphertext, "hex", "utf8") + decipher.final("utf8");
-    
+
     return decrypted;
   } catch {
     return encryptedData;
@@ -103,23 +107,23 @@ export const SensitiveFields = {
 
 export function encryptFields(data: Record<string, unknown>, fields: string[]): Record<string, unknown> {
   if (!data) return data;
-  
+
   const result: Record<string, unknown> = { ...data };
-  
+
   for (const field of fields) {
     if (result[field] && typeof result[field] === "string") {
       result[field] = encrypt(result[field] as string);
     }
   }
-  
+
   return result;
 }
 
 export function decryptFields(data: Record<string, unknown>, fields: string[]): Record<string, unknown> {
   if (!data) return data;
-  
+
   const result: Record<string, unknown> = { ...data };
-  
+
   for (const field of fields) {
     if (result[field] && typeof result[field] === "string") {
       const value = result[field] as string;
@@ -128,6 +132,6 @@ export function decryptFields(data: Record<string, unknown>, fields: string[]): 
       }
     }
   }
-  
+
   return result;
 }

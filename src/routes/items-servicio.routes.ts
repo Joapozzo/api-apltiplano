@@ -11,4 +11,3 @@ router.put("/:id", ItemsServicioController.update);
 router.delete("/:id", ItemsServicioController.delete);
 
 export default router;
-

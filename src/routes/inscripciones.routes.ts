@@ -21,4 +21,3 @@ router.post("/:id/reembolsar", InscripcionesController.reembolsar);
 router.delete("/:id", InscripcionesController.delete);
 
 export default router;
-

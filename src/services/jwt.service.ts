@@ -7,14 +7,10 @@ export interface TokenPayload {
 }
 
 export class JWTService {
-  private static readonly SECRET = process.env.JWT_SECRET || "altiplano-secret-key-change-in-production";
+  private static readonly SECRET = process.env.JWT_SECRET!;
   private static readonly ALGORITHM = "aes-256-cbc";
 
-  static generateToken(
-    id_expedicion: number,
-    id_cliente: number | null = null,
-    expiresInDays: number = 7
-  ): string {
+  static generateToken(id_expedicion: number, id_cliente: number | null = null, expiresInDays: number = 7): string {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
@@ -26,11 +22,7 @@ export class JWTService {
 
     const payloadString = JSON.stringify(payload);
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(
-      this.ALGORITHM,
-      crypto.scryptSync(this.SECRET, "salt", 32),
-      iv
-    );
+    const cipher = crypto.createCipheriv(this.ALGORITHM, crypto.scryptSync(this.SECRET, "salt", 32), iv);
 
     let encrypted = cipher.update(payloadString, "utf8", "hex");
     encrypted += cipher.final("hex");
@@ -50,11 +42,7 @@ export class JWTService {
       if (!ivHex || !encrypted) return null;
 
       const iv = Buffer.from(ivHex, "hex");
-      const decipher = crypto.createDecipheriv(
-        this.ALGORITHM,
-        crypto.scryptSync(this.SECRET, "salt", 32),
-        iv
-      );
+      const decipher = crypto.createDecipheriv(this.ALGORITHM, crypto.scryptSync(this.SECRET, "salt", 32), iv);
 
       let decrypted = decipher.update(encrypted, "hex", "utf8");
       decrypted += decipher.final("utf8");
@@ -65,11 +53,7 @@ export class JWTService {
         return null;
       }
 
-      if (
-        payload.id_cliente !== null &&
-        payload.id_cliente !== undefined &&
-        typeof payload.id_cliente !== "number"
-      ) {
+      if (payload.id_cliente !== null && payload.id_cliente !== undefined && typeof payload.id_cliente !== "number") {
         return null;
       }
 

@@ -118,29 +118,27 @@ app.use("/api/servicios", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMI
 app.use("/api/catalogos", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), catalogosRoutes);
 app.use("/api/items-servicio", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), itemsServicioRoutes);
 app.use("/api/usuarios", csrfMiddleware, authenticate, usuariosRoutes);
-app.use(
-  "/api/coordinadores",
-  csrfMiddleware,
-  authenticate,
-  authorize(APP_ROLES.ADMIN),
-  coordinadoresRoutes
-);
+app.use("/api/coordinadores", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), coordinadoresRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api", csrfMiddleware, uploadRoutes);
 app.use("/api/admin/search", authenticate, authorize(APP_ROLES.ADMIN), adminSearchRoutes);
 app.use("/api/config", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), configRoutes);
 app.use("/api/public/config", publicConfigRoutes);
-app.use(
-  "/api/admin/notificaciones",
-  csrfMiddleware,
-  authenticate,
-  authorize(APP_ROLES.ADMIN),
-  notificacionesRoutes
-);
+app.use("/api/admin/notificaciones", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), notificacionesRoutes);
 app.use("/api", dashboardRoutes);
 
 // Calendar notes routes (admin-only auth handled inside the router)
 app.use(notasCalendarioRoutes);
+
+// ==============================
+// 404 handler for unknown routes
+// ==============================
+app.use((_req, res) => {
+  res.status(404).json({
+    success: false,
+    error: "Ruta no encontrada",
+  });
+});
 
 // ==============================
 // Global error handler (must be last)

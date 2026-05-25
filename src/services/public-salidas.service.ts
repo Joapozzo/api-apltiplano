@@ -11,11 +11,7 @@ import type {
 import type { Prisma } from "@prisma/client";
 import { publicExpedicionDetailInclude, publicServicioDetailInclude } from "./public-includes.js";
 import { buildServicioPublicWhere } from "../utils/public-filters.js";
-import {
-  buildSalidaPar,
-  normalizeExpedicionPublic,
-  normalizeServicioPublic,
-} from "../utils/public-serializers.js";
+import { buildSalidaPar, normalizeExpedicionPublic, normalizeServicioPublic } from "../utils/public-serializers.js";
 import { sortSalidaPares } from "../utils/public-sort.js";
 import { findServicioActivoPorSlugIdentificador } from "../utils/find-servicio-public.js";
 
@@ -59,9 +55,7 @@ const listaExpedicionSelect = {
   },
 } satisfies Prisma.expedicionesSelect;
 
-function whereExpedicionesPublicas(
-  query: PublicCatalogQuery
-): Prisma.expedicionesWhereInput {
+function whereExpedicionesPublicas(query: PublicCatalogQuery): Prisma.expedicionesWhereInput {
   const hoy = startOfTodayLocal();
   const filtroServicio = buildServicioPublicWhere(query.q, query.dificultad);
 
@@ -77,8 +71,11 @@ function whereExpedicionesPublicas(
 }
 
 function serializeDetalleUnificado(
-  expedicion: Prisma.expedicionesGetPayload<{ include: typeof publicExpedicionDetailInclude }>
-): ApiSuccessResponse<{ servicio: ReturnType<typeof normalizeServicioPublic>; expedicion: ReturnType<typeof normalizeExpedicionPublic> }> {
+  expedicion: Prisma.expedicionesGetPayload<{ include: typeof publicExpedicionDetailInclude }>,
+): ApiSuccessResponse<{
+  servicio: ReturnType<typeof normalizeServicioPublic>;
+  expedicion: ReturnType<typeof normalizeExpedicionPublic>;
+}> {
   const { servicios, expedicion_precios, ...rest } = expedicion;
   const expedicionNorm = normalizeExpedicionPublic({
     ...rest,
@@ -97,9 +94,7 @@ function serializeDetalleUnificado(
 
 export class PublicSalidasService {
   /** Expediciones futuras con servicio/expedición alineados al front. */
-  static async list(
-    query: PublicCatalogQuery
-  ): Promise<ApiPaginatedResponse<SalidaPublicaPar>> {
+  static async list(query: PublicCatalogQuery): Promise<ApiPaginatedResponse<SalidaPublicaPar>> {
     const where = whereExpedicionesPublicas(query);
 
     const [total, rows] = await Promise.all([
@@ -141,7 +136,7 @@ export class PublicSalidasService {
   }
 
   static async calendarioPorAnio(
-    query: SalidasCalendarioQuery
+    query: SalidasCalendarioQuery,
   ): Promise<ApiSuccessResponse<SalidaPublicaCalendarioResponse>> {
     const year = query.year;
     const startYear = new Date(year, 0, 1);

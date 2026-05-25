@@ -61,7 +61,7 @@ export class ItemsServicioService {
         limit,
         pages: Math.ceil(total / limit),
       },
-    } as ApiPaginatedResponse<typeof items[0]>;
+    } as ApiPaginatedResponse<(typeof items)[0]>;
   }
 
   /**
@@ -175,4 +175,3 @@ export class ItemsServicioService {
     } as ApiSuccessResponse<{ id: number }>;
   }
 }
-

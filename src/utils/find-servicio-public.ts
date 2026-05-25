@@ -5,9 +5,7 @@ import { identificadorMatchesServicio } from "./servicio-slug.js";
 /**
  * Resuelve un servicio activo por slug en BD o por variantes derivadas del nombre.
  */
-export async function findServicioActivoPorSlugIdentificador(
-  identificador: string
-): Promise<servicios | null> {
+export async function findServicioActivoPorSlugIdentificador(identificador: string): Promise<servicios | null> {
   const id = identificador.trim();
   if (!id) return null;
 
@@ -20,7 +18,5 @@ export async function findServicioActivoPorSlugIdentificador(
     where: { activo: true },
   });
 
-  return (
-    activos.find((s) => identificadorMatchesServicio(id, s.nombre, s.slug)) ?? null
-  );
+  return activos.find((s) => identificadorMatchesServicio(id, s.nombre, s.slug)) ?? null;
 }

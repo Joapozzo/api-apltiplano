@@ -13,4 +13,3 @@ router.patch("/:id/toggle-activo", ServiciosController.toggleActivo);
 router.patch("/:id/toggle-destacado", ServiciosController.toggleDestacado);
 
 export default router;
-

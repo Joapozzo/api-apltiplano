@@ -33,7 +33,7 @@ export function slugVariantsFromNombre(nombre: string): string[] {
 export function identificadorMatchesServicio(
   identificador: string,
   nombre: string,
-  slugDb: string | null | undefined
+  slugDb: string | null | undefined,
 ): boolean {
   const id = identificador.trim().toLowerCase();
   if (!id) return false;

@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { UsuariosService, UsuariosServiceError } from "../services/usuarios.service.js";
+import { UsuariosService } from "../services/usuarios.service.js";
+import { asyncHandler } from "../middlewares/error-handler.js";
+import { AppError } from "../utils/app-error.js";
 
 const listQuerySchema = z.object({
   search: z.string().trim().min(1).optional(),
@@ -46,125 +48,56 @@ const updateRoleSchema = z.object({
   rol: z.enum(["USER", "ADMIN"]),
 });
 
-function handleError(error: unknown, res: Response, fallbackMessage: string) {
-  if (error instanceof z.ZodError) {
-    return res.status(400).json({
-      success: false,
-      error: error.issues[0]?.message ?? "Datos invAlidos",
-      code: "INVALID_PAYLOAD",
-    });
-  }
-
-  if (error instanceof UsuariosServiceError) {
-    return res.status(error.status).json({
-      success: false,
-      error: error.message,
-      code: error.code,
-    });
-  }
-
-  return res.status(500).json({
-    success: false,
-    error: fallbackMessage,
-  });
-}
-
 export class UsuariosController {
-  static async getAll(req: Request, res: Response) {
-    try {
-      const filters = listQuerySchema.parse(req.query);
-      const result = await UsuariosService.getAll(filters);
-      return res.json(result);
-    } catch (error) {
-      return handleError(error, res, "Error al obtener usuarios");
-    }
-  }
+  static getAll = asyncHandler(async (req: Request, res: Response) => {
+    const filters = listQuerySchema.parse(req.query);
+    const result = await UsuariosService.getAll(filters);
+    res.json(result);
+  });
 
-  static async getById(req: Request, res: Response) {
-    try {
-      const { id } = userIdParamSchema.parse(req.params);
-      const result = await UsuariosService.getById(id);
-      return res.json(result);
-    } catch (error) {
-      return handleError(error, res, "Error al obtener usuario");
-    }
-  }
+  static getById = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = userIdParamSchema.parse(req.params);
+    const result = await UsuariosService.getById(id);
+    res.json(result);
+  });
 
-  static async getMe(req: Request, res: Response) {
-    try {
-      if (!req.auth) {
-        return res.status(401).json({
-          success: false,
-          error: "La solicitud no estA autenticada",
-          code: "UNAUTHENTICATED",
-        });
-      }
+  static getMe = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.auth) throw new AppError("La solicitud no estA autenticada", 401);
+    const result = await UsuariosService.getMe(req.auth.id_usuario);
+    res.json(result);
+  });
 
-      const result = await UsuariosService.getMe(req.auth.id_usuario);
-      return res.json(result);
-    } catch (error) {
-      return handleError(error, res, "Error al obtener el perfil");
-    }
-  }
+  static create = asyncHandler(async (req: Request, res: Response) => {
+    const payload = createUserSchema.parse(req.body);
+    const result = await UsuariosService.create(payload);
+    res.status(201).json(result);
+  });
 
-  static async create(req: Request, res: Response) {
-    try {
-      const payload = createUserSchema.parse(req.body);
-      const result = await UsuariosService.create(payload);
-      return res.status(201).json(result);
-    } catch (error) {
-      return handleError(error, res, "Error al crear usuario");
-    }
-  }
+  static update = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = userIdParamSchema.parse(req.params);
+    const payload = updateUserSchema.parse(req.body);
+    const result = await UsuariosService.update(id, payload);
+    res.json(result);
+  });
 
-  static async update(req: Request, res: Response) {
-    try {
-      const { id } = userIdParamSchema.parse(req.params);
-      const payload = updateUserSchema.parse(req.body);
-      const result = await UsuariosService.update(id, payload);
-      return res.json(result);
-    } catch (error) {
-      return handleError(error, res, "Error al actualizar usuario");
-    }
-  }
+  static updateMe = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.auth) throw new AppError("La solicitud no estA autenticada", 401);
+    const payload = updateUserSchema.parse(req.body);
+    const result = await UsuariosService.updateMe(req.auth.id_usuario, payload);
+    res.json(result);
+  });
 
-  static async updateMe(req: Request, res: Response) {
-    try {
-      if (!req.auth) {
-        return res.status(401).json({
-          success: false,
-          error: "La solicitud no estA autenticada",
-          code: "UNAUTHENTICATED",
-        });
-      }
+  static updateActivo = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = userIdParamSchema.parse(req.params);
+    const payload = updateActivoSchema.parse(req.body);
+    const result = await UsuariosService.setActivo(id, payload.activo);
+    res.json(result);
+  });
 
-      const payload = updateUserSchema.parse(req.body);
-      const result = await UsuariosService.updateMe(req.auth.id_usuario, payload);
-      return res.json(result);
-    } catch (error) {
-      return handleError(error, res, "Error al actualizar el perfil");
-    }
-  }
-
-  static async updateActivo(req: Request, res: Response) {
-    try {
-      const { id } = userIdParamSchema.parse(req.params);
-      const payload = updateActivoSchema.parse(req.body);
-      const result = await UsuariosService.setActivo(id, payload.activo);
-      return res.json(result);
-    } catch (error) {
-      return handleError(error, res, "Error al actualizar el estado del usuario");
-    }
-  }
-
-  static async updateRol(req: Request, res: Response) {
-    try {
-      const { id } = userIdParamSchema.parse(req.params);
-      const payload = updateRoleSchema.parse(req.body);
-      const result = await UsuariosService.setRole(id, payload.rol);
-      return res.json(result);
-    } catch (error) {
-      return handleError(error, res, "Error al actualizar el rol del usuario");
-    }
-  }
+  static updateRol = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = userIdParamSchema.parse(req.params);
+    const payload = updateRoleSchema.parse(req.body);
+    const result = await UsuariosService.setRole(id, payload.rol);
+    res.json(result);
+  });
 }

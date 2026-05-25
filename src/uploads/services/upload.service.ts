@@ -2,11 +2,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../../database/prisma.js";
 import { AppError } from "../../utils/app-error.js";
 import { storageAdapter } from "../adapters/index.js";
-import type {
-  EliminarFotoCoordinadorOptions,
-  SubirFotoCoordinadorDTO,
-  SubirImagenDTO,
-} from "../types/upload.types.js";
+import type { EliminarFotoCoordinadorOptions, SubirFotoCoordinadorDTO, SubirImagenDTO } from "../types/upload.types.js";
 import {
   coordinadorFotoCarpeta,
   coordinadorFotoPublicId,
@@ -59,9 +55,7 @@ export class UploadService {
 
     const dedupedUrls = dedupeUrls(nextUrls);
     const nextUrlFoto =
-      !servicio.url_foto || matchesPublicId(servicio.url_foto, publicId)
-        ? result.url
-        : servicio.url_foto;
+      !servicio.url_foto || matchesPublicId(servicio.url_foto, publicId) ? result.url : servicio.url_foto;
 
     await prisma.servicios.update({
       where: {
@@ -137,10 +131,7 @@ export class UploadService {
     return result;
   }
 
-  static async eliminarFotoCoordinador(
-    id_coordinador: number,
-    options: EliminarFotoCoordinadorOptions = {}
-  ) {
+  static async eliminarFotoCoordinador(id_coordinador: number, options: EliminarFotoCoordinadorOptions = {}) {
     const coordinador = await prisma.coordinadores.findUnique({
       where: { id_coordinador },
       select: { id_coordinador: true, foto_public_id: true },

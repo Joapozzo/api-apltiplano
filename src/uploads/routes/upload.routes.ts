@@ -15,7 +15,7 @@ router.post(
   "/admin/servicios/:id_servicio/imagenes",
   rateLimitMiddleware,
   uploadMiddleware,
-  UploadController.subirImagen
+  UploadController.subirImagen,
 );
 router.delete("/admin/servicios/:id_servicio/imagenes", deleteRateLimitMiddleware, UploadController.eliminarImagen);
 router.get("/admin/servicios/:id_servicio/imagenes", UploadController.getImagenesServicio);
@@ -24,12 +24,12 @@ router.post(
   "/admin/coordinadores/:id_coordinador/foto",
   rateLimitMiddleware,
   uploadAvatarMiddleware,
-  UploadController.subirFotoCoordinador
+  UploadController.subirFotoCoordinador,
 );
 router.delete(
   "/admin/coordinadores/:id_coordinador/foto",
   deleteRateLimitMiddleware,
-  UploadController.eliminarFotoCoordinador
+  UploadController.eliminarFotoCoordinador,
 );
 router.get("/admin/coordinadores/:id_coordinador/foto", UploadController.getFotoCoordinador);
 

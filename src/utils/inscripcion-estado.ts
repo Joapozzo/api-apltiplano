@@ -5,8 +5,7 @@ export const INSCRIPCION_ESTADOS = {
   CANCELADO: "Cancelado",
 } as const;
 
-export type InscripcionEstado =
-  (typeof INSCRIPCION_ESTADOS)[keyof typeof INSCRIPCION_ESTADOS];
+export type InscripcionEstado = (typeof INSCRIPCION_ESTADOS)[keyof typeof INSCRIPCION_ESTADOS];
 
 const ESTADOS_OCUPAN_CUPO: Set<string> = new Set([
   INSCRIPCION_ESTADOS.INSCRIPTO,

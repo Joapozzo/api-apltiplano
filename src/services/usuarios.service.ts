@@ -81,9 +81,7 @@ function resolveEnsureCliente(roleCode: string, crearPerfilCliente?: boolean): b
 
 function mapFirebaseCreateError(error: unknown): UsuariosServiceError {
   const code =
-    error && typeof error === "object" && "code" in error
-      ? String((error as { code: string }).code)
-      : undefined;
+    error && typeof error === "object" && "code" in error ? String((error as { code: string }).code) : undefined;
 
   if (code === "auth/email-already-exists") {
     return new UsuariosServiceError("Ya existe una cuenta con ese email", 409, "EMAIL_ALREADY_EXISTS");
@@ -302,7 +300,7 @@ export class UsuariosService {
             {
               ensureCliente: true,
               syncEmail: true,
-            }
+            },
           );
         }
 
@@ -335,7 +333,7 @@ export class UsuariosService {
           }
         : {
             excludeUserId: idUsuario,
-          }
+          },
     );
 
     const updateData: {
@@ -374,7 +372,7 @@ export class UsuariosService {
         {
           ensureCliente: Boolean(existingUser.cliente),
           syncEmail: false,
-        }
+        },
       );
 
       return tx.usuarios.findUniqueOrThrow({
@@ -437,7 +435,7 @@ export class UsuariosService {
         {
           ensureCliente: roleCode === APP_ROLES.USER || Boolean(user.cliente),
           syncEmail: false,
-        }
+        },
       );
 
       return tx.usuarios.findUniqueOrThrow({

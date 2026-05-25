@@ -105,10 +105,7 @@ export class AdminSearchService {
     };
 
     if (isNumeric) {
-      where.OR = [
-        { id_expedicion: parseInt(q, 10) },
-        { servicios: { nombre: { contains: q, mode: "insensitive" } } },
-      ];
+      where.OR = [{ id_expedicion: parseInt(q, 10) }, { servicios: { nombre: { contains: q, mode: "insensitive" } } }];
     } else {
       where.servicios = {
         ...where.servicios,

@@ -1,17 +1,10 @@
 import { prisma } from "../database/prisma.js";
 import type { ApiPaginatedResponse, ApiSuccessResponse } from "../types/api.types.js";
-import type {
-  CatalogoServicioPar,
-  SalidaPublicaPar,
-  ServiciosCatalogQuery,
-} from "../types/public-salidas.dto.js";
+import type { CatalogoServicioPar, SalidaPublicaPar, ServiciosCatalogQuery } from "../types/public-salidas.dto.js";
 import type { Prisma } from "@prisma/client";
 import { publicServicioDetailInclude } from "./public-includes.js";
 import { buildServicioPublicWhere } from "../utils/public-filters.js";
-import {
-  normalizeExpedicionPublic,
-  normalizeServicioPublic,
-} from "../utils/public-serializers.js";
+import { normalizeExpedicionPublic, normalizeServicioPublic } from "../utils/public-serializers.js";
 import { sortCatalogoServicioPares } from "../utils/public-sort.js";
 import { findServicioActivoPorSlugIdentificador } from "../utils/find-servicio-public.js";
 
@@ -24,9 +17,7 @@ export class PublicServiciosService {
   /**
    * Catálogo: todos los servicios activos (con o sin próxima salida), filtros y orden.
    */
-  static async listCatalog(
-    query: ServiciosCatalogQuery
-  ): Promise<ApiPaginatedResponse<CatalogoServicioPar>> {
+  static async listCatalog(query: ServiciosCatalogQuery): Promise<ApiPaginatedResponse<CatalogoServicioPar>> {
     const filtroExtra = buildServicioPublicWhere(query.q, query.dificultad);
 
     const where: Prisma.serviciosWhereInput = {

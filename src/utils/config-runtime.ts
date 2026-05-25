@@ -28,10 +28,7 @@ export function invalidateConfigCache() {
   cache.clear();
 }
 
-export async function getConfigString(
-  key: ConfigKey,
-  fallback?: string
-): Promise<string> {
+export async function getConfigString(key: ConfigKey, fallback?: string): Promise<string> {
   const cached = getFromCache(key);
   if (cached !== null) return cached as string;
 
@@ -53,10 +50,7 @@ export async function getConfigString(
   return fallback ?? CONFIG_REGISTRY[key].defaultValue;
 }
 
-export async function getConfigNumber(
-  key: ConfigKey,
-  fallback?: number
-): Promise<number> {
+export async function getConfigNumber(key: ConfigKey, fallback?: number): Promise<number> {
   const cached = getFromCache(key);
   if (cached !== null) return cached as number;
 
@@ -79,10 +73,7 @@ export async function getConfigNumber(
   return fallback ?? Number(CONFIG_REGISTRY[key].defaultValue);
 }
 
-export async function getConfigBoolean(
-  key: ConfigKey,
-  fallback?: boolean
-): Promise<boolean> {
+export async function getConfigBoolean(key: ConfigKey, fallback?: boolean): Promise<boolean> {
   const cached = getFromCache(key);
   if (cached !== null) return cached as boolean;
 
@@ -105,10 +96,7 @@ export async function getConfigBoolean(
   return fallback ?? CONFIG_REGISTRY[key].defaultValue === "true";
 }
 
-export async function getConfigJSON<T>(
-  key: ConfigKey,
-  fallback?: T
-): Promise<T> {
+export async function getConfigJSON<T>(key: ConfigKey, fallback?: T): Promise<T> {
   const cached = getFromCache(key);
   if (cached !== null) return cached as T;
 

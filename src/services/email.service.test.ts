@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  generateInscripcionClienteEmail,
-  generateInscripcionAdminEmail,
-} from "./email.service.js";
+import { generateInscripcionClienteEmail, generateInscripcionAdminEmail } from "./email.service.js";
 
 describe("Email Service", () => {
   const mockData = {

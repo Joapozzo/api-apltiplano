@@ -8,15 +8,13 @@ export const publicCatalogQuerySchema = z.object({
     .enum(["true", "false"])
     .optional()
     .transform((v) => (v === undefined ? undefined : v === "true")),
-  q: z.string().max(200).optional().transform((v) => v?.trim() || undefined),
-  dificultad: z
-    .enum(["todas", "inicial", "medio", "avanzado"])
+  q: z
+    .string()
+    .max(200)
     .optional()
-    .default("todas"),
-  orden: z
-    .enum(["fecha", "dificultad", "precio", "nombre"])
-    .optional()
-    .default("fecha"),
+    .transform((v) => v?.trim() || undefined),
+  dificultad: z.enum(["todas", "inicial", "medio", "avanzado"]).optional().default("todas"),
+  orden: z.enum(["fecha", "dificultad", "precio", "nombre"]).optional().default("fecha"),
 });
 
 export type PublicCatalogQuery = z.infer<typeof publicCatalogQuerySchema>;
@@ -52,10 +50,7 @@ export const salidaIdentificadorParamSchema = z
   .string()
   .min(1)
   .max(200)
-  .refine(
-    (s) => /^\d+$/.test(s) || /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s),
-    "Identificador inválido"
-  );
+  .refine((s) => /^\d+$/.test(s) || /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s), "Identificador inválido");
 
 /** Pareja alineada al front (servicio con fotos/desc, expedición con precios). */
 export type SalidaPublicaPar = {

@@ -38,9 +38,7 @@ type UserWithRelations = Prisma.usuariosGetPayload<{
   select: typeof userBaseSelect;
 }>;
 
-function mapRoles(
-  usuarioRoles: UserWithRelations["usuario_roles"]
-): AppRole[] {
+function mapRoles(usuarioRoles: UserWithRelations["usuario_roles"]): AppRole[] {
   return usuarioRoles.map((item) => item.roles.codigo as AppRole);
 }
 
@@ -98,7 +96,7 @@ export async function syncClienteFromUsuario(
   options?: {
     ensureCliente?: boolean;
     syncEmail?: boolean;
-  }
+  },
 ) {
   const existingCliente = await tx.clientes.findUnique({
     where: { id_usuario: input.id_usuario },

@@ -1,13 +1,19 @@
 ﻿import type { Request, Response, NextFunction } from "express";
+import type { ZodError } from "zod";
+import type { MulterError } from "multer";
 import { AppError } from "../utils/app-error.js";
 import { logger } from "../services/logger.service.js";
 
-export function globalErrorHandler(
-  err: Error,
-  _req: Request,
-  res: Response,
-  _next: NextFunction
-): void {
+interface PrismaClientKnownRequestError extends Error {
+  code: string;
+  meta?: Record<string, unknown>;
+}
+
+interface JsonParseError extends Error {
+  type: string;
+}
+
+export function globalErrorHandler(err: Error, _req: Request, res: Response, _next: NextFunction): void {
   // Log the error
   logger.error(
     {
@@ -16,7 +22,7 @@ export function globalErrorHandler(
       message: err.message,
       stack: process.env.NODE_ENV !== "production" ? err.stack : undefined,
     },
-    "Unhandled error"
+    "Unhandled error",
   );
 
   // Handle known AppError
@@ -30,17 +36,18 @@ export function globalErrorHandler(
 
   // Handle Zod validation errors
   if (err.name === "ZodError") {
+    const zodErr = err as ZodError;
     res.status(400).json({
       success: false,
       error: "Error de validación",
-      details: (err as any).issues ?? (err as any).errors,
+      details: zodErr.issues,
     });
     return;
   }
 
   // Handle Multer errors (file upload size, etc.)
   if (err.name === "MulterError") {
-    const multerErr = err as any;
+    const multerErr = err as MulterError;
     const messages: Record<string, string> = {
       LIMIT_FILE_SIZE: "El archivo excede el tamaño máximo permitido",
       LIMIT_FILE_COUNT: "Demasiados archivos",
@@ -59,7 +66,7 @@ export function globalErrorHandler(
 
   // Handle Prisma known errors
   if (err.name === "PrismaClientKnownRequestError") {
-    const prismaErr = err as any;
+    const prismaErr = err as PrismaClientKnownRequestError;
     // P2002 = unique constraint violation
     if (prismaErr.code === "P2002") {
       res.status(409).json({
@@ -78,8 +85,37 @@ export function globalErrorHandler(
     }
   }
 
+  // Handle typed service errors with a status property (CatalogosServiceError, UsuariosServiceError, ConfigServiceError, AuthServiceError, etc.)
+  const errorWithStatus = err as { status?: number; code?: string };
+  if (typeof errorWithStatus.status === "number") {
+    res.status(errorWithStatus.status).json({
+      success: false,
+      error: err.message,
+      code: errorWithStatus.code,
+    });
+    return;
+  }
+
+  // Handle common "X no encontrado/a" patterns from services
+  if (/ no encontrad[ao]/i.test(err.message)) {
+    res.status(404).json({ success: false, error: err.message });
+    return;
+  }
+
+  // Handle common "ya existe" patterns from services
+  if (/ya existe/i.test(err.message)) {
+    res.status(409).json({ success: false, error: err.message });
+    return;
+  }
+
+  // Handle common "usado en" conflict patterns from services
+  if (/usado/i.test(err.message)) {
+    res.status(400).json({ success: false, error: err.message });
+    return;
+  }
+
   // Handle JSON parse errors
-  if ((err as any).type === "entity.parse.failed") {
+  if ((err as JsonParseError).type === "entity.parse.failed") {
     res.status(400).json({
       success: false,
       error: "JSON inválido en el cuerpo de la solicitud",
@@ -101,9 +137,7 @@ export function globalErrorHandler(
  * Wrapper for async route handlers to catch rejected promises
  * and forward them to the error handler middleware.
  */
-export function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
-) {
+export function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
   return (req: Request, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };

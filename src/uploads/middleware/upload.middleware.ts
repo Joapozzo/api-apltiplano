@@ -31,7 +31,7 @@ type ProcesarImagenOptions = {
 export async function procesarImagen(
   buffer: Buffer,
   mimetype: string,
-  options: ProcesarImagenOptions = {}
+  options: ProcesarImagenOptions = {},
 ): Promise<Buffer> {
   if (!allowedMimeTypes.includes(mimetype)) {
     throw new AppError("Formato de imagen no soportado", 400);
@@ -89,8 +89,7 @@ function createUploadMiddleware(process: (buffer: Buffer, mimetype: string) => P
         req.fileMimetype = "image/webp";
         next();
       } catch (processingError) {
-        const message =
-          processingError instanceof Error ? processingError.message : "Error al procesar la imagen";
+        const message = processingError instanceof Error ? processingError.message : "Error al procesar la imagen";
         next(new AppError(message, 400));
       }
     });

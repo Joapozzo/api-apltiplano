@@ -16,6 +16,21 @@ export interface AuditLogEntry {
   duration_ms?: number;
 }
 
+interface AuditData {
+  timestamp: string;
+  user_id?: number;
+  user_email?: string;
+  ip_address: string;
+  user_agent: string;
+  method: string;
+  path: string;
+  action: string;
+  resource_type?: string;
+  resource_id?: string;
+  status_code: number;
+  duration_ms: number;
+}
+
 const SENSITIVE_PATHS = [
   "/api/usuarios",
   "/api/inscripciones",
@@ -39,17 +54,21 @@ export function auditMiddleware(req: Request, res: Response, next: NextFunction)
     const isSensitiveAction = SENSITIVE_ACTIONS.some((a) => req.method.toLowerCase().includes(a));
 
     if (isSensitivePath || isSensitiveAction || statusCode >= 400) {
-      const auditEntry: any = {
+      const auditEntry: AuditData = {
         timestamp: new Date().toISOString(),
         ip_address: req.ip || req.socket.remoteAddress || "unknown",
         user_agent: req.headers["user-agent"] || "unknown",
         method: req.method,
         path: req.path,
         action: `${req.method} ${req.path}`,
-        resource_type: extractResourceType(req.path),
         status_code: statusCode,
         duration_ms: durationMs,
       };
+
+      const resourceType = extractResourceType(req.path);
+      if (resourceType) {
+        auditEntry.resource_type = resourceType;
+      }
 
       if (req.auth) {
         auditEntry.user_id = req.auth.id_usuario;

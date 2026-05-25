@@ -3,9 +3,7 @@ import { createLogger } from "./logger.service.js";
 
 const logger = createLogger("email");
 
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const FROM_EMAIL = "Altiplano Experience <onboarding@resend.dev>";
 const ADMIN_EMAIL = "info@altiplanoexperience.com";
@@ -107,7 +105,9 @@ export function generateInscripcionClienteEmail(data: InscripcionEmailData): Ema
   };
 }
 
-export function generateInscripcionAdminEmail(data: InscripcionEmailData & { clienteTelefono?: string; clienteDni?: string }): EmailOptions {
+export function generateInscripcionAdminEmail(
+  data: InscripcionEmailData & { clienteTelefono?: string; clienteDni?: string },
+): EmailOptions {
   const html = `
 <!DOCTYPE html>
 <html>

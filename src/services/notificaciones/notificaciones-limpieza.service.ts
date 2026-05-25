@@ -1,6 +1,8 @@
 import { prisma } from "../../database/prisma.js";
 
-export async function limpiarNotificacionesAntiguas(diasRetencion = 90): Promise<{ eliminadas: number; archivadas: number }> {
+export async function limpiarNotificacionesAntiguas(
+  diasRetencion = 90,
+): Promise<{ eliminadas: number; archivadas: number }> {
   const fechaCorte = new Date();
   fechaCorte.setDate(fechaCorte.getDate() - diasRetencion);
 

@@ -13,7 +13,7 @@ function sanitizePublicId(publicId: string): string {
   const normalized = path.normalize(sanitized).replace(/^(\.\.(\/|\\|$))+/, "");
 
   if (!normalized || normalized !== path.normalize(publicId.replace(/\.\./g, "")).replace(/^(\.\.(\/|\\|$))+/, "")) {
-    const safe = normalized.replace(/[^a-zA-Z0-9_\-\/]/g, "");
+    const safe = normalized.replace(/[^a-zA-Z0-9_\-/]/g, "");
     if (!safe) {
       throw new AppError("Identificador de imagen inválido", 400);
     }

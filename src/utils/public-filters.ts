@@ -4,7 +4,7 @@ import type { PublicCatalogQuery } from "../types/public-salidas.dto.js";
 /** Filtro por nombre/resumen y por franjas de altura (como el mock del front). */
 export function buildServicioPublicWhere(
   q?: string,
-  dificultad: PublicCatalogQuery["dificultad"] = "todas"
+  dificultad: PublicCatalogQuery["dificultad"] = "todas",
 ): Prisma.serviciosWhereInput {
   const where: Prisma.serviciosWhereInput = {};
 

@@ -60,6 +60,9 @@ export type CreateDificultadBody = {
 };
 
 export type UpdateUbicacionBody = Partial<CreateUbicacionBody> & { activo?: boolean };
-export type UpdateLugarBody = Partial<Omit<CreateLugarBody, "id_ubicacion">> & { id_ubicacion?: number; activo?: boolean };
+export type UpdateLugarBody = Partial<Omit<CreateLugarBody, "id_ubicacion">> & {
+  id_ubicacion?: number;
+  activo?: boolean;
+};
 export type UpdateActividadBody = Partial<CreateActividadBody> & { activo?: boolean };
 export type UpdateDificultadBody = Partial<CreateDificultadBody> & { activo?: boolean };

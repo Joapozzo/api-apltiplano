@@ -30,7 +30,8 @@ const SENSITIVE_FIELDS = [
 
 function maskSensitiveData(obj: unknown): unknown {
   if (obj === null || obj === undefined) return obj;
-  if (typeof obj === "string") return SENSITIVE_FIELDS.some((f) => f.toLowerCase() in { string: 1 }) ? "***MASKED***" : obj;
+  if (typeof obj === "string")
+    return SENSITIVE_FIELDS.some((f) => f.toLowerCase() in { string: 1 }) ? "***MASKED***" : obj;
   if (typeof obj !== "object") return obj;
 
   const masked: Record<string, unknown> = {};

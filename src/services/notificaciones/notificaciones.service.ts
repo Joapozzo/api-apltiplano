@@ -1,5 +1,9 @@
 import { prisma } from "../../database/prisma.js";
-import type { NotificacionesResumen, NotificacionesListParams, NotificacionSeveridad } from "../../types/notificaciones.dto.js";
+import type {
+  NotificacionesResumen,
+  NotificacionesListParams,
+  NotificacionSeveridad,
+} from "../../types/notificaciones.dto.js";
 import { NOTIFICACION_SEVERIDAD } from "../../types/notificaciones.dto.js";
 
 export async function getResumen(): Promise<NotificacionesResumen> {

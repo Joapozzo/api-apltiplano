@@ -48,14 +48,10 @@ export async function getDashboardAlertas(): Promise<DashboardAlertas> {
     orderBy: { created_at: "desc" },
   });
 
-  const cuposCriticos = notificaciones.filter(
-    (n) => n.tipo === "SALIDA_CUPOS_CRITICOS"
-  );
-  const sinDatosMedicos = notificaciones.filter(
-    (n) => n.tipo === "INSCRIPCION_SIN_DATOS_MEDICOS"
-  );
+  const cuposCriticos = notificaciones.filter((n) => n.tipo === "SALIDA_CUPOS_CRITICOS");
+  const sinDatosMedicos = notificaciones.filter((n) => n.tipo === "INSCRIPCION_SIN_DATOS_MEDICOS");
   const presupuestos = notificaciones.filter(
-    (n) => n.tipo === "SALIDA_PRESUPUESTO_POR_VENCER" || n.tipo === "SALIDA_PRESUPUESTO_VENCIDO"
+    (n) => n.tipo === "SALIDA_PRESUPUESTO_POR_VENCER" || n.tipo === "SALIDA_PRESUPUESTO_VENCIDO",
   );
 
   const expedicionesCuposCriticos = cuposCriticos.map((n) => {

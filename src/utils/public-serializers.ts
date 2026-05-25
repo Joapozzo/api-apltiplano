@@ -20,11 +20,7 @@ export function normalizeServicioPublic<
 >(raw: T): T & { fotos: string[]; desc: string } {
   const urls = Array.isArray(raw.urls_fotos) ? raw.urls_fotos : [];
   const fotos = [raw.url_foto, ...urls].filter((x): x is string => Boolean(x && String(x).trim()));
-  const desc = (
-    raw.desc_resumen ||
-    raw.descripcion_completa ||
-    ""
-  ).trim();
+  const desc = (raw.desc_resumen || raw.descripcion_completa || "").trim();
 
   return {
     ...raw,
@@ -48,12 +44,8 @@ export function normalizeExpedicionPublic<
   },
 >(raw: T) {
   const { expedicion_precios, ...rest } = raw;
-  const fechaSalida =
-    raw.fecha_salida instanceof Date
-      ? raw.fecha_salida.toISOString()
-      : String(raw.fecha_salida);
-  const fechaFin =
-    raw.fecha_fin instanceof Date ? raw.fecha_fin.toISOString() : String(raw.fecha_fin);
+  const fechaSalida = raw.fecha_salida instanceof Date ? raw.fecha_salida.toISOString() : String(raw.fecha_salida);
+  const fechaFin = raw.fecha_fin instanceof Date ? raw.fecha_fin.toISOString() : String(raw.fecha_fin);
 
   const precios: PublicPrecioItem[] = expedicion_precios.map((p) => ({
     nombre_paquete: p.nombre_paquete,
@@ -72,7 +64,7 @@ export function normalizeExpedicionPublic<
 /** Pareja servicio + expedición para listados y calendario. */
 export function buildSalidaPar(
   servicioRaw: Parameters<typeof normalizeServicioPublic>[0],
-  expedicionRaw: Parameters<typeof normalizeExpedicionPublic>[0] | null
+  expedicionRaw: Parameters<typeof normalizeExpedicionPublic>[0] | null,
 ) {
   const servicio = normalizeServicioPublic(servicioRaw as Parameters<typeof normalizeServicioPublic>[0]);
   if (!expedicionRaw) {

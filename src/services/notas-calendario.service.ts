@@ -20,7 +20,7 @@ export interface CreateNotaDTO {
   todo_el_dia?: boolean;
 }
 
-export interface UpdateNotaDTO extends Partial<CreateNotaDTO> {}
+export type UpdateNotaDTO = Partial<CreateNotaDTO>;
 
 function buildWhereNotas(filtros: NotasCalendarioFiltros): Prisma.notas_calendarioWhereInput {
   const where: Prisma.notas_calendarioWhereInput = {
@@ -53,10 +53,7 @@ function buildWhereNotas(filtros: NotasCalendarioFiltros): Prisma.notas_calendar
 export async function getNotas(filtros: NotasCalendarioFiltros) {
   return prisma.notas_calendario.findMany({
     where: buildWhereNotas(filtros),
-    orderBy: [
-      { fecha: "asc" },
-      { id_nota: "asc" },
-    ],
+    orderBy: [{ fecha: "asc" }, { id_nota: "asc" }],
   });
 }
 

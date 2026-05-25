@@ -16,14 +16,11 @@ export function setCsrfCookie(res: Response): string {
   return csrfToken;
 }
 
-const CSRF_SECRET = process.env.CSRF_SECRET || "altiplano-csrf-secret-change-in-production";
+const CSRF_SECRET = process.env.CSRF_SECRET!;
 
 export function generateCsrfToken(): string {
   const token = crypto.randomBytes(32).toString("hex");
-  const signature = crypto
-    .createHmac("sha256", CSRF_SECRET)
-    .update(token)
-    .digest("hex");
+  const signature = crypto.createHmac("sha256", CSRF_SECRET).update(token).digest("hex");
   return `${token}.${signature}`;
 }
 
@@ -36,10 +33,7 @@ export function verifyCsrfToken(token: string): boolean {
   const [tokenPart, signaturePart] = parts;
   if (!tokenPart || !signaturePart) return false;
 
-  const expectedSignature = crypto
-    .createHmac("sha256", CSRF_SECRET)
-    .update(tokenPart, "utf8")
-    .digest("hex");
+  const expectedSignature = crypto.createHmac("sha256", CSRF_SECRET).update(tokenPart, "utf8").digest("hex");
 
   return signaturePart === expectedSignature;
 }
@@ -55,7 +49,7 @@ export function issueCsrfToken(req: Request, res: Response): string {
 
 export function csrfMiddleware(req: Request, res: Response, next: NextFunction) {
   const safeMethods = ["GET", "HEAD", "OPTIONS"];
-  
+
   if (safeMethods.includes(req.method)) {
     return next();
   }

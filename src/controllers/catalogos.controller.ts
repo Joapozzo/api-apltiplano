@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { z } from "zod";
 import {
   getAllUbicaciones,
   getUbicacionById,
@@ -33,366 +32,222 @@ import {
   createLugarSchema,
   createUbicacionSchema,
 } from "../types/catalogos.dto.js";
-import { CatalogosServiceError } from "../utils/catalog-referential.js";
+import { AppError } from "../utils/app-error.js";
+import { asyncHandler } from "../middlewares/error-handler.js";
 import { parseParamId } from "../utils/express-helpers.js";
 
-function parseIdParam(req: Request, res: Response): number | null {
+function parseIdParam(req: Request): number {
   const idParam = parseParamId(req.params.id);
-  if (!idParam) {
-    res.status(400).json({ success: false, error: "ID requerido" });
-    return null;
-  }
+  if (!idParam) throw new AppError("ID requerido", 400);
   const id = parseInt(idParam);
-  if (isNaN(id)) {
-    res.status(400).json({ success: false, error: "ID inválido" });
-    return null;
-  }
+  if (isNaN(id)) throw new AppError("ID inválido", 400);
   return id;
 }
 
-function handleError(error: unknown, res: Response, fallback: string) {
-  if (error instanceof z.ZodError) {
-    return res.status(400).json({
-      success: false,
-      error: error.issues[0]?.message ?? "Datos inválidos",
-      code: "INVALID_PAYLOAD",
-    });
-  }
-
-  if (error instanceof CatalogosServiceError) {
-    return res.status(error.status).json({
-      success: false,
-      error: error.message,
-      code: error.code,
-    });
-  }
-
-  console.error("Catalogos controller error:", error);
-  return res.status(500).json({ success: false, error: fallback });
-}
-
-// ============ CATÁLOGO COMPLETO ============
-
 export class CatalogosController {
-  static async getAll(_req: Request, res: Response) {
-    try {
-      const result = await getCatalogosCompletos();
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al obtener catálogos");
-    }
-  }
+  static getAll = asyncHandler(async (_req: Request, res: Response) => {
+    const result = await getCatalogosCompletos();
+    res.json(result);
+  });
 
   // ============ UBICACIONES ============
 
-  static async getUbicaciones(req: Request, res: Response) {
-    try {
-      const activo = req.query.activo === "true" ? true : req.query.activo === "false" ? false : undefined;
-      const result = await getAllUbicaciones(activo);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al obtener ubicaciones");
-    }
-  }
+  static getUbicaciones = asyncHandler(async (req: Request, res: Response) => {
+    const activo = req.query.activo === "true" ? true : req.query.activo === "false" ? false : undefined;
+    const result = await getAllUbicaciones(activo);
+    res.json(result);
+  });
 
-  static async getUbicacionById(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await getUbicacionById(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al obtener ubicación");
-    }
-  }
+  static getUbicacionById = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await getUbicacionById(id);
+    res.json(result);
+  });
 
-  static async createUbicacion(req: Request, res: Response) {
-    try {
-      const payload = createUbicacionSchema.parse(req.body);
-      const result = await createUbicacion({
-        pais: payload.pais,
-        provincia: payload.provincia,
-        zona: payload.zona,
-        ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
-      });
-      res.status(201).json(result);
-    } catch (error) {
-      handleError(error, res, "Error al crear ubicación");
-    }
-  }
+  static createUbicacion = asyncHandler(async (req: Request, res: Response) => {
+    const payload = createUbicacionSchema.parse(req.body);
+    const result = await createUbicacion({
+      pais: payload.pais,
+      provincia: payload.provincia,
+      zona: payload.zona,
+      ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+    });
+    res.status(201).json(result);
+  });
 
-  static async updateUbicacion(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const data = req.body as Record<string, unknown>;
-      const updateData: Record<string, unknown> = {};
-      if (typeof data.pais === "string") updateData.pais = data.pais;
-      if (typeof data.provincia === "string") updateData.provincia = data.provincia;
-      if (typeof data.zona === "string") updateData.zona = data.zona;
-      if (typeof data.orden === "number") updateData.orden = data.orden;
-      if (typeof data.activo === "boolean") updateData.activo = data.activo;
-      const result = await updateUbicacion(id, updateData as Parameters<typeof updateUbicacion>[1]);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al actualizar ubicación");
-    }
-  }
+  static updateUbicacion = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const data = req.body as Record<string, unknown>;
+    const updateData: Record<string, unknown> = {};
+    if (typeof data.pais === "string") updateData.pais = data.pais;
+    if (typeof data.provincia === "string") updateData.provincia = data.provincia;
+    if (typeof data.zona === "string") updateData.zona = data.zona;
+    if (typeof data.orden === "number") updateData.orden = data.orden;
+    if (typeof data.activo === "boolean") updateData.activo = data.activo;
+    const result = await updateUbicacion(id, updateData as Parameters<typeof updateUbicacion>[1]);
+    res.json(result);
+  });
 
-  static async toggleUbicacionActivo(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await toggleUbicacionActivo(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al cambiar estado");
-    }
-  }
+  static toggleUbicacionActivo = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await toggleUbicacionActivo(id);
+    res.json(result);
+  });
 
-  static async deleteUbicacion(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await deleteUbicacion(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al eliminar ubicación");
-    }
-  }
+  static deleteUbicacion = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await deleteUbicacion(id);
+    res.json(result);
+  });
 
   // ============ LUGARES ============
 
-  static async getLugares(req: Request, res: Response) {
-    try {
-      const activo = req.query.activo === "true" ? true : req.query.activo === "false" ? false : undefined;
-      const id_ubicacion = req.query.id_ubicacion ? parseInt(req.query.id_ubicacion as string) : undefined;
-      const result = await getAllLugares(activo, id_ubicacion);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al obtener lugares");
-    }
-  }
+  static getLugares = asyncHandler(async (req: Request, res: Response) => {
+    const activo = req.query.activo === "true" ? true : req.query.activo === "false" ? false : undefined;
+    const id_ubicacion = req.query.id_ubicacion ? parseInt(req.query.id_ubicacion as string) : undefined;
+    const result = await getAllLugares(activo, id_ubicacion);
+    res.json(result);
+  });
 
-  static async getLugarById(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await getLugarById(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al obtener lugar");
-    }
-  }
+  static getLugarById = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await getLugarById(id);
+    res.json(result);
+  });
 
-  static async createLugar(req: Request, res: Response) {
-    try {
-      const payload = createLugarSchema.parse(req.body);
-      const result = await createLugar({
-        nombre: payload.nombre,
-        ...(payload.id_ubicacion !== undefined ? { id_ubicacion: payload.id_ubicacion } : {}),
-        ...(payload.tipo_lugar !== undefined ? { tipo_lugar: payload.tipo_lugar } : {}),
-        ...(payload.altitud !== undefined ? { altitud: payload.altitud } : {}),
-        ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
-        ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
-      });
-      res.status(201).json(result);
-    } catch (error) {
-      handleError(error, res, "Error al crear lugar");
-    }
-  }
+  static createLugar = asyncHandler(async (req: Request, res: Response) => {
+    const payload = createLugarSchema.parse(req.body);
+    const result = await createLugar({
+      nombre: payload.nombre,
+      ...(payload.id_ubicacion !== undefined ? { id_ubicacion: payload.id_ubicacion } : {}),
+      ...(payload.tipo_lugar !== undefined ? { tipo_lugar: payload.tipo_lugar } : {}),
+      ...(payload.altitud !== undefined ? { altitud: payload.altitud } : {}),
+      ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
+      ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+    });
+    res.status(201).json(result);
+  });
 
-  static async updateLugar(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const data = req.body as Record<string, unknown>;
-      const updateData: Record<string, unknown> = {};
-      if (typeof data.nombre === "string") updateData.nombre = data.nombre;
-      if (typeof data.id_ubicacion === "number") updateData.id_ubicacion = data.id_ubicacion;
-      if (typeof data.tipo_lugar === "string") updateData.tipo_lugar = data.tipo_lugar;
-      if (typeof data.altitud === "number") updateData.altitud = data.altitud;
-      if (typeof data.descripcion === "string") updateData.descripcion = data.descripcion;
-      if (typeof data.orden === "number") updateData.orden = data.orden;
-      if (typeof data.activo === "boolean") updateData.activo = data.activo;
-      const result = await updateLugar(id, updateData);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al actualizar lugar");
-    }
-  }
+  static updateLugar = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const data = req.body as Record<string, unknown>;
+    const updateData: Record<string, unknown> = {};
+    if (typeof data.nombre === "string") updateData.nombre = data.nombre;
+    if (typeof data.id_ubicacion === "number") updateData.id_ubicacion = data.id_ubicacion;
+    if (typeof data.tipo_lugar === "string") updateData.tipo_lugar = data.tipo_lugar;
+    if (typeof data.altitud === "number") updateData.altitud = data.altitud;
+    if (typeof data.descripcion === "string") updateData.descripcion = data.descripcion;
+    if (typeof data.orden === "number") updateData.orden = data.orden;
+    if (typeof data.activo === "boolean") updateData.activo = data.activo;
+    const result = await updateLugar(id, updateData);
+    res.json(result);
+  });
 
-  static async toggleLugarActivo(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await toggleLugarActivo(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al cambiar estado");
-    }
-  }
+  static toggleLugarActivo = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await toggleLugarActivo(id);
+    res.json(result);
+  });
 
-  static async deleteLugar(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await deleteLugar(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al eliminar lugar");
-    }
-  }
+  static deleteLugar = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await deleteLugar(id);
+    res.json(result);
+  });
 
   // ============ ACTIVIDADES ============
 
-  static async getActividades(req: Request, res: Response) {
-    try {
-      const activo = req.query.activo === "true" ? true : req.query.activo === "false" ? false : undefined;
-      const result = await getAllActividades(activo);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al obtener actividades");
-    }
-  }
+  static getActividades = asyncHandler(async (req: Request, res: Response) => {
+    const activo = req.query.activo === "true" ? true : req.query.activo === "false" ? false : undefined;
+    const result = await getAllActividades(activo);
+    res.json(result);
+  });
 
-  static async getActividadById(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await getActividadById(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al obtener actividad");
-    }
-  }
+  static getActividadById = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await getActividadById(id);
+    res.json(result);
+  });
 
-  static async createActividad(req: Request, res: Response) {
-    try {
-      const payload = createActividadSchema.parse(req.body);
-      const result = await createActividad({
-        nombre: payload.nombre,
-        ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
-        ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
-      });
-      res.status(201).json(result);
-    } catch (error) {
-      handleError(error, res, "Error al crear actividad");
-    }
-  }
+  static createActividad = asyncHandler(async (req: Request, res: Response) => {
+    const payload = createActividadSchema.parse(req.body);
+    const result = await createActividad({
+      nombre: payload.nombre,
+      ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
+      ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+    });
+    res.status(201).json(result);
+  });
 
-  static async updateActividad(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const data = req.body as Record<string, unknown>;
-      const updateData: Record<string, unknown> = {};
-      if (typeof data.nombre === "string") updateData.nombre = data.nombre;
-      if (typeof data.descripcion === "string") updateData.descripcion = data.descripcion;
-      if (typeof data.orden === "number") updateData.orden = data.orden;
-      if (typeof data.activo === "boolean") updateData.activo = data.activo;
-      const result = await updateActividad(id, updateData);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al actualizar actividad");
-    }
-  }
+  static updateActividad = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const data = req.body as Record<string, unknown>;
+    const updateData: Record<string, unknown> = {};
+    if (typeof data.nombre === "string") updateData.nombre = data.nombre;
+    if (typeof data.descripcion === "string") updateData.descripcion = data.descripcion;
+    if (typeof data.orden === "number") updateData.orden = data.orden;
+    if (typeof data.activo === "boolean") updateData.activo = data.activo;
+    const result = await updateActividad(id, updateData);
+    res.json(result);
+  });
 
-  static async toggleActividadActivo(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await toggleActividadActivo(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al cambiar estado");
-    }
-  }
+  static toggleActividadActivo = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await toggleActividadActivo(id);
+    res.json(result);
+  });
 
-  static async deleteActividad(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await deleteActividad(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al eliminar actividad");
-    }
-  }
+  static deleteActividad = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await deleteActividad(id);
+    res.json(result);
+  });
 
   // ============ DIFICULTADES ============
 
-  static async getDificultades(req: Request, res: Response) {
-    try {
-      const activo = req.query.activo === "true" ? true : req.query.activo === "false" ? false : undefined;
-      const result = await getAllDificultades(activo);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al obtener dificultades");
-    }
-  }
+  static getDificultades = asyncHandler(async (req: Request, res: Response) => {
+    const activo = req.query.activo === "true" ? true : req.query.activo === "false" ? false : undefined;
+    const result = await getAllDificultades(activo);
+    res.json(result);
+  });
 
-  static async getDificultadById(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await getDificultadById(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al obtener dificultad");
-    }
-  }
+  static getDificultadById = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await getDificultadById(id);
+    res.json(result);
+  });
 
-  static async createDificultad(req: Request, res: Response) {
-    try {
-      const payload = createDificultadSchema.parse(req.body);
-      const result = await createDificultad({
-        nivel: payload.nivel,
-        ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
-        ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
-      });
-      res.status(201).json(result);
-    } catch (error) {
-      handleError(error, res, "Error al crear dificultad");
-    }
-  }
+  static createDificultad = asyncHandler(async (req: Request, res: Response) => {
+    const payload = createDificultadSchema.parse(req.body);
+    const result = await createDificultad({
+      nivel: payload.nivel,
+      ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
+      ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+    });
+    res.status(201).json(result);
+  });
 
-  static async updateDificultad(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const data = req.body as Record<string, unknown>;
-      const updateData: Record<string, unknown> = {};
-      if (typeof data.nivel === "string") updateData.nivel = data.nivel;
-      if (typeof data.descripcion === "string") updateData.descripcion = data.descripcion;
-      if (typeof data.orden === "number") updateData.orden = data.orden;
-      if (typeof data.activo === "boolean") updateData.activo = data.activo;
-      const result = await updateDificultad(id, updateData);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al actualizar dificultad");
-    }
-  }
+  static updateDificultad = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const data = req.body as Record<string, unknown>;
+    const updateData: Record<string, unknown> = {};
+    if (typeof data.nivel === "string") updateData.nivel = data.nivel;
+    if (typeof data.descripcion === "string") updateData.descripcion = data.descripcion;
+    if (typeof data.orden === "number") updateData.orden = data.orden;
+    if (typeof data.activo === "boolean") updateData.activo = data.activo;
+    const result = await updateDificultad(id, updateData);
+    res.json(result);
+  });
 
-  static async toggleDificultadActivo(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await toggleDificultadActivo(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al cambiar estado");
-    }
-  }
+  static toggleDificultadActivo = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await toggleDificultadActivo(id);
+    res.json(result);
+  });
 
-  static async deleteDificultad(req: Request, res: Response) {
-    try {
-      const id = parseIdParam(req, res);
-      if (id === null) return;
-      const result = await deleteDificultad(id);
-      res.json(result);
-    } catch (error) {
-      handleError(error, res, "Error al eliminar dificultad");
-    }
-  }
+  static deleteDificultad = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseIdParam(req);
+    const result = await deleteDificultad(id);
+    res.json(result);
+  });
 }

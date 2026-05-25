@@ -70,10 +70,7 @@ export class AuthService {
           select: userBaseSelect,
         }));
 
-      if (
-        existingByUid &&
-        existingByUid.email !== email
-      ) {
+      if (existingByUid && existingByUid.email !== email) {
         const emailConflict = await tx.usuarios.findUnique({
           where: { email },
           select: { id_usuario: true },
@@ -83,7 +80,7 @@ export class AuthService {
           throw new AuthServiceError(
             "El email de Firebase ya estA asociado a otro usuario local",
             409,
-            "EMAIL_ALREADY_IN_USE"
+            "EMAIL_ALREADY_IN_USE",
           );
         }
       }
@@ -115,7 +112,7 @@ export class AuthService {
           {
             ensureCliente: true,
             syncEmail: true,
-          }
+          },
         );
 
         if (updatedUser.usuario_roles.length === 0) {
@@ -143,7 +140,7 @@ export class AuthService {
           throw new AuthServiceError(
             "Ya existe un usuario local con ese email vinculado a otro UID de Firebase",
             409,
-            "FIREBASE_UID_MISMATCH"
+            "FIREBASE_UID_MISMATCH",
           );
         }
 
@@ -164,7 +161,7 @@ export class AuthService {
           {
             ensureCliente: true,
             syncEmail: true,
-          }
+          },
         );
 
         if (updatedUser.usuario_roles.length === 0) {
@@ -214,7 +211,7 @@ export class AuthService {
         {
           ensureCliente: true,
           syncEmail: true,
-        }
+        },
       );
 
       return {
@@ -231,7 +228,9 @@ export class AuthService {
       data: {
         user: mapUserResponse(result.user),
       },
-      message: result.created ? "Usuario registrado y sincronizado correctamente" : "Usuario sincronizado correctamente",
+      message: result.created
+        ? "Usuario registrado y sincronizado correctamente"
+        : "Usuario sincronizado correctamente",
     };
   }
 

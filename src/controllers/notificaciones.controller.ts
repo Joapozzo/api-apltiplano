@@ -32,7 +32,7 @@ export class NotificacionesController {
     if (parsed.limit) params.limit = parsed.limit;
     if (parsed.cursor) params.cursor = parsed.cursor;
     if (parsed.page) params.page = parsed.page;
-    
+
     const data = await notificacionesService.getNotificaciones(params as any);
     res.json({ success: true, data });
   }
