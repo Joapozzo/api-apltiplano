@@ -1,9 +1,36 @@
-import cors from "cors";
+﻿import cors from "cors";
+import type { CorsOptions } from "cors";
 
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:3000" || "http://localhost:3001",
+function parseOrigins(origins: string | undefined): string[] {
+  if (!origins || origins.trim() === "") {
+    return ["http://localhost:3000"];
+  }
+  return origins
+    .split(",")
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
+}
+
+const allowedOrigins = parseOrigins(process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL);
+
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, mobile apps, Postman, etc.)
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "X-Requested-With"],
+  exposedHeaders: ["Set-Cookie"],
 };
 
 export default cors(corsOptions);
-

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getAllUbicaciones, getUbicacionById, createUbicacion, updateUbicacion, toggleUbicacionActivo, deleteUbicacion, getAllLugares, getLugarById, createLugar, updateLugar, toggleLugarActivo, deleteLugar, getAllActividades, getActividadById, createActividad, updateActividad, toggleActividadActivo, deleteActividad, getAllDificultades, getDificultadById, createDificultad, updateDificultad, toggleDificultadActivo, deleteDificultad, getCatalogosCompletos, } from "../services/catalogos.service.js";
+import { createActividadSchema, createDificultadSchema, createLugarSchema, createUbicacionSchema, } from "../types/catalogos.dto.js";
 import { CatalogosServiceError } from "../utils/catalog-referential.js";
 import { parseParamId } from "../utils/express-helpers.js";
 function parseIdParam(req, res) {
@@ -19,7 +20,7 @@ function handleError(error, res, fallback) {
     if (error instanceof z.ZodError) {
         return res.status(400).json({
             success: false,
-            error: "Datos inválidos",
+            error: error.issues[0]?.message ?? "Datos inválidos",
             code: "INVALID_PAYLOAD",
         });
     }
@@ -69,15 +70,13 @@ export class CatalogosController {
     }
     static async createUbicacion(req, res) {
         try {
-            const data = req.body;
-            const args = {
-                pais: String(data.pais || ""),
-                provincia: String(data.provincia || ""),
-                zona: String(data.zona || ""),
-            };
-            if (typeof data.orden === "number")
-                args.orden = data.orden;
-            const result = await createUbicacion(args);
+            const payload = createUbicacionSchema.parse(req.body);
+            const result = await createUbicacion({
+                pais: payload.pais,
+                provincia: payload.provincia,
+                zona: payload.zona,
+                ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+            });
             res.status(201).json(result);
         }
         catch (error) {
@@ -158,20 +157,15 @@ export class CatalogosController {
     }
     static async createLugar(req, res) {
         try {
-            const data = req.body;
-            const args = {
-                nombre: String(data.nombre || ""),
-                id_ubicacion: Number(data.id_ubicacion),
-            };
-            if (typeof data.tipo_lugar === "string")
-                args.tipo_lugar = data.tipo_lugar;
-            if (typeof data.altitud === "number")
-                args.altitud = data.altitud;
-            if (typeof data.descripcion === "string")
-                args.descripcion = data.descripcion;
-            if (typeof data.orden === "number")
-                args.orden = data.orden;
-            const result = await createLugar(args);
+            const payload = createLugarSchema.parse(req.body);
+            const result = await createLugar({
+                nombre: payload.nombre,
+                ...(payload.id_ubicacion !== undefined ? { id_ubicacion: payload.id_ubicacion } : {}),
+                ...(payload.tipo_lugar !== undefined ? { tipo_lugar: payload.tipo_lugar } : {}),
+                ...(payload.altitud !== undefined ? { altitud: payload.altitud } : {}),
+                ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
+                ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+            });
             res.status(201).json(result);
         }
         catch (error) {
@@ -255,13 +249,12 @@ export class CatalogosController {
     }
     static async createActividad(req, res) {
         try {
-            const data = req.body;
-            const args = { nombre: String(data.nombre || "") };
-            if (typeof data.descripcion === "string")
-                args.descripcion = data.descripcion;
-            if (typeof data.orden === "number")
-                args.orden = data.orden;
-            const result = await createActividad(args);
+            const payload = createActividadSchema.parse(req.body);
+            const result = await createActividad({
+                nombre: payload.nombre,
+                ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
+                ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+            });
             res.status(201).json(result);
         }
         catch (error) {
@@ -339,13 +332,12 @@ export class CatalogosController {
     }
     static async createDificultad(req, res) {
         try {
-            const data = req.body;
-            const args = { nivel: String(data.nivel || "") };
-            if (typeof data.descripcion === "string")
-                args.descripcion = data.descripcion;
-            if (typeof data.orden === "number")
-                args.orden = data.orden;
-            const result = await createDificultad(args);
+            const payload = createDificultadSchema.parse(req.body);
+            const result = await createDificultad({
+                nivel: payload.nivel,
+                ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
+                ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+            });
             res.status(201).json(result);
         }
         catch (error) {

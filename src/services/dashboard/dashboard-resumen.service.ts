@@ -1,6 +1,7 @@
-import { Prisma } from "@prisma/client";
+﻿import { Prisma } from "@prisma/client";
 import { prisma } from "../../database/prisma.js";
 import { getMonedaDefault } from "../../utils/config-runtime.js";
+import { EXPEDICION_ESTADOS } from "../../utils/expedicion-estado.js";
 
 export interface DashboardFiltros {
   fecha_desde?: Date;
@@ -34,7 +35,11 @@ export interface DashboardResumenResponse {
   }>;
 }
 
-const ESTADOS_EXPEDICIONES_ACTIVAS = ["confirmada", "en_proceso"];
+// Estados de expediciones que se consideran "activas" para el dashboard
+const ESTADOS_EXPEDICIONES_ACTIVAS = [
+  EXPEDICION_ESTADOS.ACTIVA,
+  EXPEDICION_ESTADOS.COMPLETA,
+];
 
 export async function getDashboardResumen(
   filtros: DashboardFiltros

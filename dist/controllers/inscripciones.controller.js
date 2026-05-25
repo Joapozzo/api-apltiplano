@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { issueCsrfToken } from "../middlewares/csrf.js";
 import { InscripcionesService } from "../services/inscripciones.service.js";
-import { encryptSensitiveData } from "../utils/data-protection.js";
+import { encryptInscripcionPii } from "../utils/data-protection.js";
 import { parseParamId, parseParamIdOptional } from "../utils/express-helpers.js";
 const usuarioSchema = z.object({
     nombre: z.string().min(1, "El nombre es requerido").max(100),
@@ -50,30 +51,27 @@ export class InscripcionesController {
                 };
                 return res.status(400).json(errorResponse);
             }
-            if (!id_cliente) {
-                const errorResponse = {
-                    success: false,
-                    error: "id_cliente es requerido",
-                };
-                return res.status(400).json(errorResponse);
-            }
             const idExpedicionNumber = typeof id_expedicion === "string"
                 ? parseInt(id_expedicion, 10)
                 : Number(id_expedicion);
-            const idClienteNumber = typeof id_cliente === "string"
-                ? parseInt(id_cliente, 10)
-                : Number(id_cliente);
+            let idClienteNumber = null;
+            if (id_cliente !== undefined && id_cliente !== null && id_cliente !== "") {
+                idClienteNumber =
+                    typeof id_cliente === "string"
+                        ? parseInt(id_cliente, 10)
+                        : Number(id_cliente);
+                if (isNaN(idClienteNumber)) {
+                    const errorResponse = {
+                        success: false,
+                        error: "id_cliente debe ser un número válido",
+                    };
+                    return res.status(400).json(errorResponse);
+                }
+            }
             if (isNaN(idExpedicionNumber)) {
                 const errorResponse = {
                     success: false,
                     error: "id_expedicion debe ser un número válido",
-                };
-                return res.status(400).json(errorResponse);
-            }
-            if (isNaN(idClienteNumber)) {
-                const errorResponse = {
-                    success: false,
-                    error: "id_cliente debe ser un número válido",
                 };
                 return res.status(400).json(errorResponse);
             }
@@ -107,9 +105,11 @@ export class InscripcionesController {
                 };
                 return res.status(400).json(errorResponse);
             }
+            const csrfToken = issueCsrfToken(req, res);
             res.json({
                 success: true,
                 data: result,
+                csrfToken,
             });
         }
         catch (error) {
@@ -132,30 +132,25 @@ export class InscripcionesController {
                 return res.status(400).json(errorResponse);
             }
             const data = parsed.data;
-            const usuario = encryptSensitiveData({
-                nombre: data.usuario.nombre,
-                apellido: data.usuario.apellido,
+            const inscripcionPii = encryptInscripcionPii({
                 dni: data.usuario.dni,
-                fecha_nacimiento: data.usuario.fecha_nacimiento,
-                email: data.usuario.email,
                 telefono: data.usuario.telefono ?? "",
                 provincia: data.usuario.provincia ?? "",
                 emergencia_nombre: data.usuario.emergencia_nombre ?? "",
                 emergencia_telefono: data.usuario.emergencia_telefono ?? "",
             });
-            let datosMedicos = undefined;
-            if (data.datos_medicos) {
-                datosMedicos = encryptSensitiveData({
-                    cobertura_medica: data.datos_medicos.cobertura_medica ?? "",
-                    grupo_sanguineo: data.datos_medicos.grupo_sanguineo ?? "DESCONOCIDO",
-                    alergias: data.datos_medicos.alergias,
-                    alergias_detalle: data.datos_medicos.alergias_detalle ?? "",
-                    diabetes: data.datos_medicos.diabetes,
-                    asma: data.datos_medicos.asma,
-                    hipertension: data.datos_medicos.hipertension,
-                    otros_antecedentes: data.datos_medicos.otros_antecedentes ?? "",
-                });
-            }
+            const usuario = {
+                nombre: data.usuario.nombre,
+                apellido: data.usuario.apellido,
+                dni: inscripcionPii.dni,
+                fecha_nacimiento: data.usuario.fecha_nacimiento,
+                email: data.usuario.email,
+                telefono: inscripcionPii.telefono || undefined,
+                provincia: inscripcionPii.provincia || undefined,
+                emergencia_nombre: inscripcionPii.emergencia_nombre || undefined,
+                emergencia_telefono: inscripcionPii.emergencia_telefono || undefined,
+            };
+            const datosMedicos = data.datos_medicos;
             let actividadFisica = undefined;
             if (data.actividad_fisica) {
                 actividadFisica = {
@@ -202,6 +197,15 @@ export class InscripcionesController {
             }
             if (req.query.expedicion) {
                 filters.expedicion = parseInt(req.query.expedicion);
+            }
+            if (req.query.cliente) {
+                filters.cliente = parseInt(req.query.cliente);
+            }
+            if (req.query.activas === "true") {
+                filters.activas = true;
+            }
+            if (req.query.detalle === "true") {
+                filters.detalle = true;
             }
             if (req.query.search) {
                 filters.search = req.query.search;
@@ -272,6 +276,31 @@ export class InscripcionesController {
             const errorResponse = {
                 success: false,
                 error: error.message || "Error al actualizar inscripción",
+            };
+            res.status(400).json(errorResponse);
+        }
+    }
+    static async reembolsar(req, res) {
+        try {
+            const id = parseParamId(req.params.id);
+            if (!id) {
+                const errorResponse = {
+                    success: false,
+                    error: "ID es requerido",
+                };
+                return res.status(400).json(errorResponse);
+            }
+            const inscripcion = await InscripcionesService.reembolsarInscripcion(parseInt(id));
+            res.json({
+                success: true,
+                data: inscripcion,
+                message: "Inscripción reembolsada y cupo liberado",
+            });
+        }
+        catch (error) {
+            const errorResponse = {
+                success: false,
+                error: error.message || "Error al reembolsar inscripción",
             };
             res.status(400).json(errorResponse);
         }

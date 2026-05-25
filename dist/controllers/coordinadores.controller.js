@@ -1,3 +1,4 @@
+import { issueCsrfToken } from "../middlewares/csrf.js";
 import { CoordinadoresService } from "../services/coordinadores.service.js";
 import { z } from "zod";
 import { parseParamId } from "../utils/express-helpers.js";
@@ -31,7 +32,8 @@ export class CoordinadoresController {
             if (search)
                 filters.search = search;
             const result = await CoordinadoresService.list(filters);
-            res.json(result);
+            const csrfToken = issueCsrfToken(req, res);
+            res.json({ ...result, csrfToken });
         }
         catch (error) {
             const message = error instanceof Error ? error.message : "Error al listar coordinadores";

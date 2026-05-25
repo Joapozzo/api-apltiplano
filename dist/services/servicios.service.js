@@ -1,5 +1,6 @@
 import { prisma } from "../database/prisma.js";
 import { assertCatalogoActivo } from "../utils/catalog-referential.js";
+import { defaultSlugForNombre } from "../utils/servicio-slug.js";
 export class ServiciosService {
     /**
      * Obtener todos los servicios con filtros opcionales
@@ -129,7 +130,7 @@ export class ServiciosService {
         const servicio = await prisma.servicios.create({
             data: {
                 nombre: data.nombre,
-                slug: data.slug ?? null,
+                slug: data.slug?.trim() || defaultSlugForNombre(data.nombre),
                 id_lugar: data.id_lugar,
                 id_actividad: data.id_actividad,
                 id_dificultad: data.id_dificultad,

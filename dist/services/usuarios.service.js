@@ -1,5 +1,7 @@
+import { randomBytes } from "node:crypto";
 import { APP_ROLES } from "../types/auth.types.js";
 import { prisma } from "../database/prisma.js";
+import { firebaseAdminAuth } from "./firebase-admin.service.js";
 import { mapUserResponse, syncClienteFromUsuario, userBaseSelect } from "./usuarios.shared.js";
 export class UsuariosServiceError extends Error {
     status;
@@ -14,9 +16,6 @@ export class UsuariosServiceError extends Error {
 function normalizeEmail(email) {
     return email.trim().toLowerCase();
 }
-function normalizeFirebaseUid(firebaseUid) {
-    return firebaseUid.trim();
-}
 function normalizeUsername(username) {
     const normalized = username?.trim();
     return normalized && normalized.length > 0 ? normalized : null;
@@ -29,6 +28,55 @@ async function getRoleOrThrow(roleCode) {
         throw new UsuariosServiceError(`Rol "${roleCode}" no configurado`, 500, "ROLE_NOT_CONFIGURED");
     }
     return role;
+}
+function generateTempPassword() {
+    return `${randomBytes(12).toString("base64url")}Aa1!`;
+}
+function resolveEnsureCliente(roleCode, crearPerfilCliente) {
+    if (roleCode === APP_ROLES.ADMIN) {
+        return false;
+    }
+    if (crearPerfilCliente !== undefined) {
+        return crearPerfilCliente;
+    }
+    return roleCode === APP_ROLES.USER;
+}
+function mapFirebaseCreateError(error) {
+    const code = error && typeof error === "object" && "code" in error
+        ? String(error.code)
+        : undefined;
+    if (code === "auth/email-already-exists") {
+        return new UsuariosServiceError("Ya existe una cuenta con ese email", 409, "EMAIL_ALREADY_EXISTS");
+    }
+    if (code === "auth/invalid-password") {
+        return new UsuariosServiceError("La contraseña no cumple los requisitos de Firebase", 400, "INVALID_PASSWORD");
+    }
+    return new UsuariosServiceError("No se pudo crear la cuenta en Firebase", 500, "FIREBASE_CREATE_FAILED");
+}
+async function createFirebaseUserOrThrow(input) {
+    try {
+        const record = await firebaseAdminAuth().createUser({
+            email: input.email,
+            password: input.password,
+            displayName: input.displayName,
+            emailVerified: false,
+        });
+        return record.uid;
+    }
+    catch (error) {
+        if (error instanceof UsuariosServiceError) {
+            throw error;
+        }
+        throw mapFirebaseCreateError(error);
+    }
+}
+async function deleteFirebaseUserSafe(firebaseUid) {
+    try {
+        await firebaseAdminAuth().deleteUser(firebaseUid);
+    }
+    catch {
+        // best-effort rollback
+    }
 }
 async function ensureUniqueUserFields(input) {
     if (input.firebase_uid) {
@@ -128,56 +176,68 @@ export class UsuariosService {
         return this.getById(idUsuario);
     }
     static async create(data) {
-        const firebaseUid = normalizeFirebaseUid(data.firebase_uid);
         const email = normalizeEmail(data.email);
         const username = normalizeUsername(data.username);
         const roleCode = data.rol?.trim() || APP_ROLES.USER;
         const nombre = data.nombre.trim();
         const apellido = data.apellido.trim();
+        const ensureCliente = resolveEnsureCliente(roleCode, data.crear_perfil_cliente);
+        const password = data.password?.trim() || generateTempPassword();
+        const displayName = [nombre, apellido].filter(Boolean).join(" ").trim() || email;
         await ensureUniqueUserFields({
-            firebase_uid: firebaseUid,
             email,
             username,
         });
         const role = await getRoleOrThrow(roleCode);
-        const createdUser = await prisma.$transaction(async (tx) => {
-            const user = await tx.usuarios.create({
-                data: {
-                    firebase_uid: firebaseUid,
-                    email,
-                    nombre,
-                    apellido,
-                    username,
-                    activo: data.activo ?? true,
-                    usuario_roles: {
-                        create: {
-                            id_rol: role.id_rol,
+        const firebaseUid = await createFirebaseUserOrThrow({
+            email,
+            password,
+            displayName,
+        });
+        try {
+            const createdUser = await prisma.$transaction(async (tx) => {
+                const user = await tx.usuarios.create({
+                    data: {
+                        firebase_uid: firebaseUid,
+                        email,
+                        nombre,
+                        apellido,
+                        username,
+                        activo: data.activo ?? true,
+                        usuario_roles: {
+                            create: {
+                                id_rol: role.id_rol,
+                            },
                         },
                     },
-                },
-                select: userBaseSelect,
-            });
-            if (roleCode === APP_ROLES.USER) {
-                await syncClienteFromUsuario(tx, {
-                    id_usuario: user.id_usuario,
-                    email: user.email,
-                    nombre: user.nombre,
-                    apellido: user.apellido,
-                }, {
-                    ensureCliente: true,
-                    syncEmail: true,
+                    select: userBaseSelect,
                 });
-            }
-            return tx.usuarios.findUniqueOrThrow({
-                where: { id_usuario: user.id_usuario },
-                select: userBaseSelect,
+                if (ensureCliente) {
+                    await syncClienteFromUsuario(tx, {
+                        id_usuario: user.id_usuario,
+                        email: user.email,
+                        nombre: user.nombre,
+                        apellido: user.apellido,
+                    }, {
+                        ensureCliente: true,
+                        syncEmail: true,
+                    });
+                }
+                return tx.usuarios.findUniqueOrThrow({
+                    where: { id_usuario: user.id_usuario },
+                    select: userBaseSelect,
+                });
             });
-        });
-        return {
-            success: true,
-            data: mapUserResponse(createdUser),
-            message: "Usuario creado exitosamente",
-        };
+            return {
+                success: true,
+                data: mapUserResponse(createdUser),
+                message: "Usuario creado exitosamente",
+            };
+        }
+        catch (error) {
+            await deleteFirebaseUserSafe(firebaseUid);
+            throw error;
+        }
     }
     static async update(idUsuario, data) {
         const existingUser = await getUserOrThrow(idUsuario);

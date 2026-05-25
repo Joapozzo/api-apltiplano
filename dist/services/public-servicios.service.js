@@ -3,6 +3,7 @@ import { publicServicioDetailInclude } from "./public-includes.js";
 import { buildServicioPublicWhere } from "../utils/public-filters.js";
 import { normalizeExpedicionPublic, normalizeServicioPublic, } from "../utils/public-serializers.js";
 import { sortCatalogoServicioPares } from "../utils/public-sort.js";
+import { findServicioActivoPorSlugIdentificador } from "../utils/find-servicio-public.js";
 function startOfTodayLocal() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -102,11 +103,16 @@ export class PublicServiciosService {
     }
     static async getByIdentificador(identificador) {
         const esId = /^\d+$/.test(identificador);
-        const baseWhere = esId
-            ? { id_servicio: parseInt(identificador, 10), activo: true }
-            : { slug: identificador, activo: true };
+        const servicioBase = esId
+            ? await prisma.servicios.findFirst({
+                where: { id_servicio: parseInt(identificador, 10), activo: true },
+            })
+            : await findServicioActivoPorSlugIdentificador(identificador);
+        if (!servicioBase) {
+            throw new Error("Servicio no encontrado");
+        }
         const servicio = await prisma.servicios.findFirst({
-            where: baseWhere,
+            where: { id_servicio: servicioBase.id_servicio, activo: true },
             include: {
                 ...publicServicioDetailInclude,
                 expediciones: {
@@ -126,8 +132,8 @@ export class PublicServiciosService {
             throw new Error("Servicio no encontrado");
         }
         const proxima = servicio.expediciones[0];
-        const { expediciones: _exp, ...servicioBase } = servicio;
-        const servicioNorm = normalizeServicioPublic(servicioBase);
+        const { expediciones: _exp, ...servicioRow } = servicio;
+        const servicioNorm = normalizeServicioPublic(servicioRow);
         if (proxima) {
             const expedicionNorm = normalizeExpedicionPublic({
                 ...proxima,

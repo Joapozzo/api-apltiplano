@@ -2,6 +2,8 @@ import { prisma } from "../database/prisma.js";
 import { getExpedicionEstadoInicial, getPresupuestoDiasValidez } from "../utils/config-runtime.js";
 import { emitSalidaEstadoCompleta } from "./notificaciones/notificaciones-emit.service.js";
 import { syncAlertasOperativas } from "./notificaciones/notificaciones-sync.service.js";
+import { decryptInscripcionRecord } from "../utils/data-protection.js";
+import { INSCRIPCION_ESTADOS } from "../utils/inscripcion-estado.js";
 export class ExpedicionesService {
     /**
      * Validar si una expedición tiene cupos disponibles
@@ -155,9 +157,13 @@ export class ExpedicionesService {
         if (!expedicion) {
             throw new Error("Expedición no encontrada");
         }
+        const data = {
+            ...expedicion,
+            inscripciones: expedicion.inscripciones.map((ins) => decryptInscripcionRecord(ins)),
+        };
         return {
             success: true,
-            data: expedicion,
+            data,
         };
     }
     /**
@@ -389,7 +395,11 @@ export class ExpedicionesService {
             where: {
                 id_expedicion,
                 estado: {
-                    in: ["Confirmado", "Inscripto"],
+                    in: [
+                        INSCRIPCION_ESTADOS.CONFIRMADO,
+                        INSCRIPCION_ESTADOS.INSCRIPTO,
+                        INSCRIPCION_ESTADOS.PENDIENTE,
+                    ],
                 },
             },
         });

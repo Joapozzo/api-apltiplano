@@ -1,4 +1,5 @@
 import { APP_ROLES } from "../types/auth.types.js";
+import { decryptClientePii } from "../utils/data-protection.js";
 export const userBaseSelect = {
     id_usuario: true,
     firebase_uid: true,
@@ -45,24 +46,27 @@ export function mapAuthenticatedUser(user) {
 }
 export function mapUserResponse(user) {
     const roles = mapRoles(user.usuario_roles);
+    const nombre = decryptClientePii({ nombre: user.nombre }).nombre ?? user.nombre;
+    const apellido = decryptClientePii({ apellido: user.apellido }).apellido ?? user.apellido;
+    const cliente = user.cliente ? decryptClientePii(user.cliente) : null;
     return {
         id_usuario: user.id_usuario,
         firebase_uid: user.firebase_uid,
         email: user.email,
         username: user.username,
-        nombre: user.nombre,
-        apellido: user.apellido,
+        nombre,
+        apellido,
         activo: user.activo,
         fecha_registro: user.fecha_registro,
         fecha_actualizacion: user.fecha_actualizacion,
         roles,
         rol_principal: roles[0] ?? APP_ROLES.USER,
-        cliente: user.cliente
+        cliente: cliente
             ? {
-                id_cliente: user.cliente.id_cliente,
-                nombre: user.cliente.nombre,
-                apellido: user.cliente.apellido,
-                email: user.cliente.email,
+                id_cliente: cliente.id_cliente,
+                nombre: cliente.nombre,
+                apellido: cliente.apellido,
+                email: cliente.email,
                 fecha_creacion: user.cliente.fecha_creacion,
                 total_inscripciones: user.cliente._count.inscripciones,
             }

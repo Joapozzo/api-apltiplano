@@ -1,4 +1,16 @@
 import crypto from "crypto";
+/** Cookie httpOnly + token para doble envío (header X-CSRF-Token). */
+export function setCsrfCookie(res) {
+    const csrfToken = generateCsrfToken();
+    const isProduction = process.env.NODE_ENV === "production";
+    res.cookie("csrf_token", csrfToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: "strict",
+        maxAge: 24 * 60 * 60 * 1000,
+    });
+    return csrfToken;
+}
 const CSRF_SECRET = process.env.CSRF_SECRET || "altiplano-csrf-secret-change-in-production";
 export function generateCsrfToken() {
     const token = crypto.randomBytes(32).toString("hex");
@@ -22,6 +34,14 @@ export function verifyCsrfToken(token) {
         .update(tokenPart, "utf8")
         .digest("hex");
     return signaturePart === expectedSignature;
+}
+/** Reutiliza cookie CSRF válida o emite una nueva (evita carreras entre peticiones paralelas). */
+export function issueCsrfToken(req, res) {
+    const existing = req.cookies?.csrf_token;
+    if (typeof existing === "string" && verifyCsrfToken(existing)) {
+        return existing;
+    }
+    return setCsrfCookie(res);
 }
 export function csrfMiddleware(req, res, next) {
     const safeMethods = ["GET", "HEAD", "OPTIONS"];

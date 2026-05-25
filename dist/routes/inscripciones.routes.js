@@ -13,6 +13,7 @@ router.put("/tokens/:id/disable", InscripcionesController.disableToken);
 router.get("/", InscripcionesController.list);
 router.get("/:id", InscripcionesController.getById);
 router.put("/:id", InscripcionesController.update);
+router.post("/:id/reembolsar", InscripcionesController.reembolsar);
 router.delete("/:id", InscripcionesController.delete);
 export default router;
 //# sourceMappingURL=inscripciones.routes.js.map

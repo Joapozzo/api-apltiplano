@@ -4,6 +4,7 @@ import { publicExpedicionDetailInclude, publicServicioDetailInclude } from "./pu
 import { buildServicioPublicWhere } from "../utils/public-filters.js";
 import { buildSalidaPar, normalizeExpedicionPublic, normalizeServicioPublic, } from "../utils/public-serializers.js";
 import { sortSalidaPares } from "../utils/public-sort.js";
+import { findServicioActivoPorSlugIdentificador } from "../utils/find-servicio-public.js";
 function startOfTodayLocal() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -169,9 +170,7 @@ export class PublicSalidasService {
         return serializeDetalleUnificado(expedicion);
     }
     static async getDetallePorSlugServicio(slug, idExpedicionOpcional) {
-        const servicioRow = await prisma.servicios.findFirst({
-            where: { slug, activo: true },
-        });
+        const servicioRow = await findServicioActivoPorSlugIdentificador(slug);
         if (!servicioRow) {
             throw new Error("Salida no encontrada");
         }
