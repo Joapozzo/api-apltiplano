@@ -24,10 +24,7 @@ function buildWhereNotas(filtros) {
 export async function getNotas(filtros) {
     return prisma.notas_calendario.findMany({
         where: buildWhereNotas(filtros),
-        orderBy: [
-            { fecha: "asc" },
-            { id_nota: "asc" },
-        ],
+        orderBy: [{ fecha: "asc" }, { id_nota: "asc" }],
     });
 }
 export async function getNotasByMes(anio, mes, id_usuario) {

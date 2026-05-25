@@ -24,10 +24,13 @@ export function auditMiddleware(req, res, next) {
                 method: req.method,
                 path: req.path,
                 action: `${req.method} ${req.path}`,
-                resource_type: extractResourceType(req.path),
                 status_code: statusCode,
                 duration_ms: durationMs,
             };
+            const resourceType = extractResourceType(req.path);
+            if (resourceType) {
+                auditEntry.resource_type = resourceType;
+            }
             if (req.auth) {
                 auditEntry.user_id = req.auth.id_usuario;
                 auditEntry.user_email = req.auth.email;

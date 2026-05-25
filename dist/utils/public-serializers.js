@@ -4,9 +4,7 @@
 export function normalizeServicioPublic(raw) {
     const urls = Array.isArray(raw.urls_fotos) ? raw.urls_fotos : [];
     const fotos = [raw.url_foto, ...urls].filter((x) => Boolean(x && String(x).trim()));
-    const desc = (raw.desc_resumen ||
-        raw.descripcion_completa ||
-        "").trim();
+    const desc = (raw.desc_resumen || raw.descripcion_completa || "").trim();
     return {
         ...raw,
         fotos,
@@ -18,9 +16,7 @@ export function normalizeServicioPublic(raw) {
  */
 export function normalizeExpedicionPublic(raw) {
     const { expedicion_precios, ...rest } = raw;
-    const fechaSalida = raw.fecha_salida instanceof Date
-        ? raw.fecha_salida.toISOString()
-        : String(raw.fecha_salida);
+    const fechaSalida = raw.fecha_salida instanceof Date ? raw.fecha_salida.toISOString() : String(raw.fecha_salida);
     const fechaFin = raw.fecha_fin instanceof Date ? raw.fecha_fin.toISOString() : String(raw.fecha_fin);
     const precios = expedicion_precios.map((p) => ({
         nombre_paquete: p.nombre_paquete,

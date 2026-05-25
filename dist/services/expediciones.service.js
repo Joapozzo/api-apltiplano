@@ -172,10 +172,7 @@ export class ExpedicionesService {
     static async getActive() {
         const expediciones = await prisma.expediciones.findMany({
             where: {
-                OR: [
-                    { estado: "A" },
-                    { estado: "Activa" },
-                ],
+                OR: [{ estado: "A" }, { estado: "Activa" }],
             },
             include: {
                 servicios: {
@@ -216,11 +213,8 @@ export class ExpedicionesService {
         if (!data.precios || data.precios.length === 0) {
             throw new Error("Debe agregar al menos un precio");
         }
-        const [estadoInicial, diasValidez] = await Promise.all([
-            getExpedicionEstadoInicial(),
-            getPresupuestoDiasValidez(),
-        ]);
-        let presupuestoHasta = null;
+        const [estadoInicial, diasValidez] = await Promise.all([getExpedicionEstadoInicial(), getPresupuestoDiasValidez()]);
+        let presupuestoHasta;
         if (data.presupuesto_valido_hasta) {
             presupuestoHasta = new Date(data.presupuesto_valido_hasta);
         }
@@ -299,9 +293,7 @@ export class ExpedicionesService {
                     fecha_fin: fechaFin,
                     cupos_disponibles: data.cupos_disponibles,
                     estado: data.estado,
-                    presupuesto_valido_hasta: data.presupuesto_valido_hasta
-                        ? new Date(data.presupuesto_valido_hasta)
-                        : null,
+                    presupuesto_valido_hasta: data.presupuesto_valido_hasta ? new Date(data.presupuesto_valido_hasta) : null,
                     expedicion_precios: {
                         create: data.precios.map((p) => ({
                             nombre_paquete: p.nombre_paquete,
@@ -395,11 +387,7 @@ export class ExpedicionesService {
             where: {
                 id_expedicion,
                 estado: {
-                    in: [
-                        INSCRIPCION_ESTADOS.CONFIRMADO,
-                        INSCRIPCION_ESTADOS.INSCRIPTO,
-                        INSCRIPCION_ESTADOS.PENDIENTE,
-                    ],
+                    in: [INSCRIPCION_ESTADOS.CONFIRMADO, INSCRIPCION_ESTADOS.INSCRIPTO, INSCRIPCION_ESTADOS.PENDIENTE],
                 },
             },
         });

@@ -1,7 +1,7 @@
 import { prisma } from "../database/prisma.js";
 import { publicServicioDetailInclude } from "./public-includes.js";
 import { buildServicioPublicWhere } from "../utils/public-filters.js";
-import { normalizeExpedicionPublic, normalizeServicioPublic, } from "../utils/public-serializers.js";
+import { normalizeExpedicionPublic, normalizeServicioPublic } from "../utils/public-serializers.js";
 import { sortCatalogoServicioPares } from "../utils/public-sort.js";
 import { findServicioActivoPorSlugIdentificador } from "../utils/find-servicio-public.js";
 function startOfTodayLocal() {

@@ -359,7 +359,11 @@ export async function deleteDificultad(id) {
 export async function getCatalogosCompletos() {
     const [ubicaciones, lugares, actividades, dificultades, items] = await Promise.all([
         prisma.ubicaciones.findMany({ where: { activo: true }, orderBy: { orden: "asc" } }),
-        prisma.lugares.findMany({ where: { activo: true }, include: { ubicaciones: { select: { pais: true, provincia: true, zona: true } } }, orderBy: { nombre: "asc" } }),
+        prisma.lugares.findMany({
+            where: { activo: true },
+            include: { ubicaciones: { select: { pais: true, provincia: true, zona: true } } },
+            orderBy: { nombre: "asc" },
+        }),
         prisma.actividades.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
         prisma.dificultades.findMany({ where: { activo: true }, orderBy: { id_dificultad: "asc" } }),
         prisma.items_servicio.findMany({ where: { activo: true }, orderBy: { nombre: "asc" }, take: 100 }),

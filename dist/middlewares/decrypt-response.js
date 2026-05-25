@@ -1,18 +1,19 @@
+import { decrypt } from "../utils/encryption.js";
 const PUBLIC_PATHS = ["/api/servicios", "/api/salidas", "/api/user/servicios", "/api/user/salidas"];
 const SENSITIVE_RESPONSE_FIELDS = {
     "usuarios.email": ["email"],
     "clientes.email": ["email", "nombre", "apellido", "telefono"],
     "inscripciones.dni": ["dni", "telefono", "provincia", "emergencia_nombre", "emergencia_telefono"],
-    "inscripcion_datos_medicos": ["grupo_sanguineo", "cobertura_medica"],
+    inscripcion_datos_medicos: ["grupo_sanguineo", "cobertura_medica"],
 };
 function isEncryptedValue(value) {
     if (!value)
         return false;
     const parts = value.split(":");
-    return parts.length === 3 && parts.every(p => /^[0-9a-f]+$/.test(p));
+    return parts.length === 3 && parts.every((p) => /^[0-9a-f]+$/.test(p));
 }
 export function decryptResponse(req, res, next) {
-    const isPublicPath = PUBLIC_PATHS.some(p => req.path.startsWith(p));
+    const isPublicPath = PUBLIC_PATHS.some((p) => req.path.startsWith(p));
     if (isPublicPath || req.method === "GET") {
         return next();
     }
@@ -40,7 +41,6 @@ function decryptSensitiveFields(data) {
     for (const [key, value] of Object.entries(result)) {
         if (typeof value === "string" && isEncryptedValue(value)) {
             try {
-                const { decrypt } = require("../utils/encryption.js");
                 result[key] = decrypt(value);
             }
             catch {

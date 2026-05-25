@@ -42,9 +42,7 @@ function resolveEnsureCliente(roleCode, crearPerfilCliente) {
     return roleCode === APP_ROLES.USER;
 }
 function mapFirebaseCreateError(error) {
-    const code = error && typeof error === "object" && "code" in error
-        ? String(error.code)
-        : undefined;
+    const code = error && typeof error === "object" && "code" in error ? String(error.code) : undefined;
     if (code === "auth/email-already-exists") {
         return new UsuariosServiceError("Ya existe una cuenta con ese email", 409, "EMAIL_ALREADY_EXISTS");
     }

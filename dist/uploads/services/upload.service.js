@@ -40,9 +40,7 @@ export class UploadService {
             ? servicio.urls_fotos.map((url) => (matchesPublicId(url, publicId) ? result.url : url))
             : [...servicio.urls_fotos, result.url];
         const dedupedUrls = dedupeUrls(nextUrls);
-        const nextUrlFoto = !servicio.url_foto || matchesPublicId(servicio.url_foto, publicId)
-            ? result.url
-            : servicio.url_foto;
+        const nextUrlFoto = !servicio.url_foto || matchesPublicId(servicio.url_foto, publicId) ? result.url : servicio.url_foto;
         await prisma.servicios.update({
             where: {
                 id_servicio: dto.id_servicio,

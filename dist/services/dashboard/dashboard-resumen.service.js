@@ -1,11 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../database/prisma.js";
 import { getMonedaDefault } from "../../utils/config-runtime.js";
-const ESTADOS_EXPEDICIONES_ACTIVAS = ["confirmada", "en_proceso"];
+import { EXPEDICION_ESTADOS } from "../../utils/expedicion-estado.js";
+// Estados de expediciones que se consideran "activas" para el dashboard
+const ESTADOS_EXPEDICIONES_ACTIVAS = [EXPEDICION_ESTADOS.ACTIVA, EXPEDICION_ESTADOS.COMPLETA];
 export async function getDashboardResumen(filtros) {
     const fechaDesde = filtros.fecha_desde ?? new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const fechaHasta = filtros.fecha_hasta ??
-        new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999);
+    const fechaHasta = filtros.fecha_hasta ?? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999);
     const hoy = new Date();
     const [expedicionesActivas, inscripcionesPeriodo, pagosPeriodo, expedicionesProximas] = await Promise.all([
         prisma.expediciones.findMany({

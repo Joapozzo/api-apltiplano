@@ -11,13 +11,10 @@ export function setCsrfCookie(res) {
     });
     return csrfToken;
 }
-const CSRF_SECRET = process.env.CSRF_SECRET || "altiplano-csrf-secret-change-in-production";
+const CSRF_SECRET = process.env.CSRF_SECRET;
 export function generateCsrfToken() {
     const token = crypto.randomBytes(32).toString("hex");
-    const signature = crypto
-        .createHmac("sha256", CSRF_SECRET)
-        .update(token)
-        .digest("hex");
+    const signature = crypto.createHmac("sha256", CSRF_SECRET).update(token).digest("hex");
     return `${token}.${signature}`;
 }
 export function verifyCsrfToken(token) {
@@ -29,10 +26,7 @@ export function verifyCsrfToken(token) {
     const [tokenPart, signaturePart] = parts;
     if (!tokenPart || !signaturePart)
         return false;
-    const expectedSignature = crypto
-        .createHmac("sha256", CSRF_SECRET)
-        .update(tokenPart, "utf8")
-        .digest("hex");
+    const expectedSignature = crypto.createHmac("sha256", CSRF_SECRET).update(tokenPart, "utf8").digest("hex");
     return signaturePart === expectedSignature;
 }
 /** Reutiliza cookie CSRF válida o emite una nueva (evita carreras entre peticiones paralelas). */

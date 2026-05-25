@@ -1,6 +1,6 @@
 import crypto from "crypto";
 export class JWTService {
-    static SECRET = process.env.JWT_SECRET || "altiplano-secret-key-change-in-production";
+    static SECRET = process.env.JWT_SECRET;
     static ALGORITHM = "aes-256-cbc";
     static generateToken(id_expedicion, id_cliente = null, expiresInDays = 7) {
         const expiresAt = new Date();
@@ -37,9 +37,7 @@ export class JWTService {
             if (typeof payload.id_expedicion !== "number") {
                 return null;
             }
-            if (payload.id_cliente !== null &&
-                payload.id_cliente !== undefined &&
-                typeof payload.id_cliente !== "number") {
+            if (payload.id_cliente !== null && payload.id_cliente !== undefined && typeof payload.id_cliente !== "number") {
                 return null;
             }
             payload.id_cliente = payload.id_cliente ?? null;

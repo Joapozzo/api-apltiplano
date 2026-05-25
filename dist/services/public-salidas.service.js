@@ -2,7 +2,7 @@ import { prisma } from "../database/prisma.js";
 import { expedicionEstaActivaPublica } from "../utils/expedicion-estado.js";
 import { publicExpedicionDetailInclude, publicServicioDetailInclude } from "./public-includes.js";
 import { buildServicioPublicWhere } from "../utils/public-filters.js";
-import { buildSalidaPar, normalizeExpedicionPublic, normalizeServicioPublic, } from "../utils/public-serializers.js";
+import { buildSalidaPar, normalizeExpedicionPublic, normalizeServicioPublic } from "../utils/public-serializers.js";
 import { sortSalidaPares } from "../utils/public-sort.js";
 import { findServicioActivoPorSlugIdentificador } from "../utils/find-servicio-public.js";
 function startOfTodayLocal() {

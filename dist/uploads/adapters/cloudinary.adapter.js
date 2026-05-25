@@ -12,9 +12,7 @@ if (process.env.CLOUDINARY_API_SECRET) {
 }
 cloudinary.config(cloudinaryConfig);
 function assertCloudinaryConfig() {
-    if (!process.env.CLOUDINARY_CLOUD_NAME ||
-        !process.env.CLOUDINARY_API_KEY ||
-        !process.env.CLOUDINARY_API_SECRET) {
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
         throw new AppError("Cloudinary no esta configurado correctamente", 500);
     }
 }

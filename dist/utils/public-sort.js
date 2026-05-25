@@ -15,15 +15,12 @@ export function sortSalidaPares(pares, orden) {
             return copy.sort((a, b) => precioMin(a.expedicion) - precioMin(b.expedicion));
         case "fecha":
         default:
-            return copy.sort((a, b) => new Date(a.expedicion.fecha_salida).getTime() -
-                new Date(b.expedicion.fecha_salida).getTime());
+            return copy.sort((a, b) => new Date(a.expedicion.fecha_salida).getTime() - new Date(b.expedicion.fecha_salida).getTime());
     }
 }
 export function sortCatalogoServicioPares(items, orden) {
     const copy = [...items];
-    const fechaVal = (x) => x.expedicion?.fecha_salida
-        ? new Date(x.expedicion.fecha_salida).getTime()
-        : Number.POSITIVE_INFINITY;
+    const fechaVal = (x) => x.expedicion?.fecha_salida ? new Date(x.expedicion.fecha_salida).getTime() : Number.POSITIVE_INFINITY;
     switch (orden) {
         case "nombre":
             return copy.sort((a, b) => String(a.servicio.nombre).localeCompare(String(b.servicio.nombre), "es"));

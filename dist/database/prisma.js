@@ -3,18 +3,10 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
 });
-// Manejar desconexión al cerrar la aplicación
+// Graceful shutdown is now handled in server.ts via server.close()
+// These handlers serve as a fallback in case server.ts is bypassed (e.g., in tests)
 process.on("beforeExit", async () => {
     await prisma.$disconnect();
-});
-// Manejar señales de terminación
-process.on("SIGINT", async () => {
-    await prisma.$disconnect();
-    process.exit(0);
-});
-process.on("SIGTERM", async () => {
-    await prisma.$disconnect();
-    process.exit(0);
 });
 export { prisma };
 //# sourceMappingURL=prisma.js.map

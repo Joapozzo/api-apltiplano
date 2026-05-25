@@ -7,15 +7,13 @@ export const publicCatalogQuerySchema = z.object({
         .enum(["true", "false"])
         .optional()
         .transform((v) => (v === undefined ? undefined : v === "true")),
-    q: z.string().max(200).optional().transform((v) => v?.trim() || undefined),
-    dificultad: z
-        .enum(["todas", "inicial", "medio", "avanzado"])
+    q: z
+        .string()
+        .max(200)
         .optional()
-        .default("todas"),
-    orden: z
-        .enum(["fecha", "dificultad", "precio", "nombre"])
-        .optional()
-        .default("fecha"),
+        .transform((v) => v?.trim() || undefined),
+    dificultad: z.enum(["todas", "inicial", "medio", "avanzado"]).optional().default("todas"),
+    orden: z.enum(["fecha", "dificultad", "precio", "nombre"]).optional().default("fecha"),
 });
 /** @deprecated usar publicCatalogQuerySchema */
 export const salidasListQuerySchema = publicCatalogQuerySchema;

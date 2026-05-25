@@ -50,8 +50,7 @@ export class AuthService {
                     where: { email },
                     select: userBaseSelect,
                 }));
-            if (existingByUid &&
-                existingByUid.email !== email) {
+            if (existingByUid && existingByUid.email !== email) {
                 const emailConflict = await tx.usuarios.findUnique({
                     where: { email },
                     select: { id_usuario: true },
@@ -172,7 +171,9 @@ export class AuthService {
             data: {
                 user: mapUserResponse(result.user),
             },
-            message: result.created ? "Usuario registrado y sincronizado correctamente" : "Usuario sincronizado correctamente",
+            message: result.created
+                ? "Usuario registrado y sincronizado correctamente"
+                : "Usuario sincronizado correctamente",
         };
     }
     static async getCurrentUser(idToken) {

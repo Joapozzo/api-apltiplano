@@ -7,8 +7,8 @@ import { EmailService } from "./email.service.js";
 import crypto from "crypto";
 import { APP_ROLES } from "../types/auth.types.js";
 import { syncClienteFromUsuario } from "./usuarios.shared.js";
-import { decryptClientePii, decryptInscripcionRecord, } from "../utils/data-protection.js";
-import { INSCRIPCION_ESTADOS, normalizeInscripcionUpdate, } from "../utils/inscripcion-estado.js";
+import { decryptClientePii, decryptInscripcionRecord } from "../utils/data-protection.js";
+import { INSCRIPCION_ESTADOS, normalizeInscripcionUpdate } from "../utils/inscripcion-estado.js";
 import { ExpedicionesService } from "./expediciones.service.js";
 async function resolveOrCreateClienteForInscripcion(tx, usuario) {
     const email = usuario.email.trim().toLowerCase();
@@ -62,7 +62,7 @@ async function resolveOrCreateClienteForInscripcion(tx, usuario) {
 }
 export class InscripcionesService {
     static async generateLink(id_expedicion, id_cliente, expiresInDays) {
-        const diasToken = expiresInDays ?? await getInscripcionTokenDias();
+        const diasToken = expiresInDays ?? (await getInscripcionTokenDias());
         const expedicion = await prisma.expediciones.findFirst({
             where: { id_expedicion },
             include: {

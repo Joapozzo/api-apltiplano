@@ -26,7 +26,9 @@ export function encrypt(plaintext) {
         return "";
     const key = getEncryptionKey();
     if (!key) {
-        return plaintext;
+        throw new Error("ENCRYPTION_KEY is not configured — cannot encrypt sensitive data. " +
+            "Set ENCRYPTION_KEY in your .env file (64 hex chars). " +
+            "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"");
     }
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(ALGORITHM, key, iv, {

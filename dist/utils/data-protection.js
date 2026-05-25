@@ -55,13 +55,7 @@ export function encryptSensitiveData(data) {
 }
 /** @deprecated Usar decryptInscripcionPii / decryptClientePii */
 export function decryptSensitiveData(data) {
-    return decryptObjectFields(data, [
-        ...INSCRIPCION_PII_FIELDS,
-        "nombre",
-        "apellido",
-        "email",
-        "telefono",
-    ]);
+    return decryptObjectFields(data, [...INSCRIPCION_PII_FIELDS, "nombre", "apellido", "email", "telefono"]);
 }
 export function encryptObjectFields(obj, fields) {
     if (!isEncryptionEnabled()) {
