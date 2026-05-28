@@ -48,6 +48,10 @@ export function validateEnv(): void {
       "See env.example for a complete reference.",
     ].join("\n");
     logger.error(message);
+    // On Vercel/serverless, throw so the error appears in runtime logs
+    if (process.env.VERCEL) {
+      throw new Error(message);
+    }
     process.exit(1);
   }
 

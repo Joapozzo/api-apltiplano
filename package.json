@@ -25,6 +25,7 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
+    "postinstall": "prisma generate",
     "backfill:decrypt-names": "tsx scripts/backfill-decrypt-client-names.ts",
     "secrets:generate": "node scripts/generate-secrets.mjs"
   },
