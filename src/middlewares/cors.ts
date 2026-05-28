@@ -1,13 +1,22 @@
 ﻿import cors from "cors";
 import type { CorsOptions } from "cors";
 
+function normalizeOrigin(value: string): string {
+  let origin = value.trim().replace(/\/$/, "");
+  if (!origin) return origin;
+  if (!origin.startsWith("http://") && !origin.startsWith("https://")) {
+    origin = `https://${origin}`;
+  }
+  return origin;
+}
+
 function parseOrigins(origins: string | undefined): string[] {
   if (!origins || origins.trim() === "") {
     return ["http://localhost:3000"];
   }
   return origins
     .split(",")
-    .map((o) => o.trim())
+    .map((o) => normalizeOrigin(o))
     .filter((o) => o.length > 0);
 }
 
@@ -21,7 +30,9 @@ const corsOptions: CorsOptions = {
       return;
     }
 
-    if (allowedOrigins.includes(origin)) {
+    const normalizedRequestOrigin = normalizeOrigin(origin);
+
+    if (allowedOrigins.includes(normalizedRequestOrigin)) {
       callback(null, true);
     } else {
       callback(new Error(`Origin ${origin} not allowed by CORS`));
