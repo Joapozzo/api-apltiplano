@@ -85,7 +85,11 @@ const loggerOptions: LoggerOptions = {
   },
 };
 
-if (!isProduction) {
+// pino-pretty no funciona en serverless (Vercel); solo en dev local.
+const usePrettyTransport =
+  !isProduction && !process.env.VERCEL && process.env.LOG_PRETTY !== "false";
+
+if (usePrettyTransport) {
   loggerOptions.transport = {
     target: "pino-pretty",
     options: {
