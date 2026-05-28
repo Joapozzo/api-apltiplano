@@ -1,11 +1,20 @@
 import cors from "cors";
+function normalizeOrigin(value) {
+    let origin = value.trim().replace(/\/$/, "");
+    if (!origin)
+        return origin;
+    if (!origin.startsWith("http://") && !origin.startsWith("https://")) {
+        origin = `https://${origin}`;
+    }
+    return origin;
+}
 function parseOrigins(origins) {
     if (!origins || origins.trim() === "") {
         return ["http://localhost:3000"];
     }
     return origins
         .split(",")
-        .map((o) => o.trim())
+        .map((o) => normalizeOrigin(o))
         .filter((o) => o.length > 0);
 }
 const allowedOrigins = parseOrigins(process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL);
@@ -16,7 +25,8 @@ const corsOptions = {
             callback(null, true);
             return;
         }
-        if (allowedOrigins.includes(origin)) {
+        const normalizedRequestOrigin = normalizeOrigin(origin);
+        if (allowedOrigins.includes(normalizedRequestOrigin)) {
             callback(null, true);
         }
         else {

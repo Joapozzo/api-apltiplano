@@ -79,7 +79,9 @@ const loggerOptions = {
         }),
     },
 };
-if (!isProduction) {
+// Solo en dev local con LOG_PRETTY=true (pino-pretty no funciona en serverless).
+const usePrettyTransport = process.env.LOG_PRETTY === "true";
+if (usePrettyTransport) {
     loggerOptions.transport = {
         target: "pino-pretty",
         options: {
