@@ -31,6 +31,10 @@ import { APP_ROLES } from "./types/auth.types.js";
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
 
+if (isProduction || process.env.VERCEL) {
+  app.set("trust proxy", 1);
+}
+
 // ==============================
 // Security headers
 // ==============================

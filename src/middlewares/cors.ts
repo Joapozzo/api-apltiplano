@@ -20,6 +20,12 @@ function parseOrigins(origins: string | undefined): string[] {
     .filter((o) => o.length > 0);
 }
 
+const originSource = process.env.ALLOWED_ORIGINS
+  ? "ALLOWED_ORIGINS"
+  : process.env.FRONTEND_URL
+    ? "FRONTEND_URL"
+    : "default";
+
 const allowedOrigins = parseOrigins(process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL);
 
 const corsOptions: CorsOptions = {
@@ -35,7 +41,11 @@ const corsOptions: CorsOptions = {
     if (allowedOrigins.includes(normalizedRequestOrigin)) {
       callback(null, true);
     } else {
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
+      callback(new Error(
+        `Origin "${origin}" not allowed by CORS.\n` +
+        `  Source: ${originSource}\n` +
+        `  Allowed: ${allowedOrigins.join(", ")}`
+      ));
     }
   },
   credentials: true,
