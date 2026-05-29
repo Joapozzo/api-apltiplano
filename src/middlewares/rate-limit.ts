@@ -20,11 +20,15 @@ export const apiLimiter = rateLimit({
   },
 });
 
+const authRateLimitMax = Number.parseInt(process.env.AUTH_RATE_LIMIT_MAX ?? "30", 10);
+
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: Number.isFinite(authRateLimitMax) && authRateLimitMax > 0 ? authRateLimitMax : 30,
   standardHeaders: true,
   legacyHeaders: false,
+  /** Solo cuentan intentos fallidos (401/4xx/5xx); el login exitoso no agota el cupo. */
+  skipSuccessfulRequests: true,
   message: (_req: Request, _res: Response) => {
     logger.warn({ message: "Auth rate limit exceeded" }, "Auth rate limit blocked");
     return {

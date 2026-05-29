@@ -8,7 +8,7 @@ import { csrfProtection } from "./middlewares/csrf.js";
 import { auditMiddleware } from "./middlewares/audit.js";
 import { requestLogger } from "./middlewares/request-logger.js";
 import { globalErrorHandler } from "./middlewares/error-handler.js";
-import { apiLimiter, authLimiter, inscriptionLimiter } from "./middlewares/rate-limit.js";
+import { apiLimiter, inscriptionLimiter } from "./middlewares/rate-limit.js";
 import { prisma } from "./database/prisma.js";
 import inscripcionesRoutes from "./routes/inscripciones.routes.js";
 import expedicionesRoutes from "./routes/expediciones.routes.js";
@@ -110,8 +110,7 @@ app.get("/", (_req, res) => {
   });
 });
 
-// Auth routes with stricter rate limiting
-app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/auth", authRoutes);
 
 // Inscription routes with inscription-specific rate limiting
 app.use("/api/inscripciones", inscriptionLimiter, csrfMiddleware, inscripcionesRoutes);
