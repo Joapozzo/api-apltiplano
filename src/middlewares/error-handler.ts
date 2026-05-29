@@ -83,6 +83,14 @@ export function globalErrorHandler(err: Error, _req: Request, res: Response, _ne
       });
       return;
     }
+    // P2003 = foreign key constraint violation
+    if (prismaErr.code === "P2003") {
+      res.status(409).json({
+        success: false,
+        error: "No se puede eliminar porque tiene registros asociados",
+      });
+      return;
+    }
   }
 
   // Handle typed service errors with a status property (CatalogosServiceError, UsuariosServiceError, ConfigServiceError, AuthServiceError, etc.)

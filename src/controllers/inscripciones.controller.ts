@@ -194,7 +194,7 @@ export class InscripcionesController {
     res.json({
       success: true,
       data: inscripcion,
-      message: "Inscripción reembolsada y cupo liberado",
+      message: "Inscripción reembolsada, cupo liberado y registro eliminado",
     });
   });
 

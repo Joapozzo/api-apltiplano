@@ -10,6 +10,7 @@ import { APP_ROLES } from "../types/auth.types.js";
 import { syncClienteFromUsuario } from "./usuarios.shared.js";
 import { decryptClientePii, decryptInscripcionRecord } from "../utils/data-protection.js";
 import { INSCRIPCION_ESTADOS, normalizeInscripcionUpdate } from "../utils/inscripcion-estado.js";
+import { removeInscripcionRecord } from "../utils/inscripcion-cleanup.js";
 import { ExpedicionesService } from "./expediciones.service.js";
 
 export interface CreateInscripcionData {
@@ -544,71 +545,55 @@ export class InscripcionesService {
   static async reembolsarInscripcion(id: number) {
     const inscripcion = await prisma.inscripciones.findUnique({
       where: { id_inscripcion: id },
-      include: { pagos: true },
+      include: {
+        pagos: true,
+        clientes: true,
+        inscripcion_datos_medicos: true,
+        inscripcion_actividad_fisica: true,
+        expediciones: {
+          include: {
+            servicios: {
+              include: {
+                lugares: { include: { ubicaciones: true } },
+                actividades: true,
+                dificultades: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!inscripcion) {
       throw new Error("Inscripción no encontrada");
     }
 
-    if (inscripcion.estado === INSCRIPCION_ESTADOS.CANCELADO) {
-      throw new Error("La inscripción ya fue reembolsada y el cupo liberado");
-    }
-
-    const row = await prisma.$transaction(async (tx) => {
-      const updated = await tx.inscripciones.update({
-        where: { id_inscripcion: id },
-        data: {
-          estado: INSCRIPCION_ESTADOS.CANCELADO,
-          reserva_pagada: false,
-          saldo_pagado: false,
-        },
-        include: {
-          clientes: true,
-          inscripcion_datos_medicos: true,
-          inscripcion_actividad_fisica: true,
-          expediciones: {
-            include: {
-              servicios: {
-                include: {
-                  lugares: { include: { ubicaciones: true } },
-                  actividades: true,
-                  dificultades: true,
-                },
-              },
-            },
-          },
-          pagos: { orderBy: { fecha_pago: "desc" } },
-        },
-      });
-
-      for (const pago of inscripcion.pagos) {
-        if (pago.estado === "Reembolsado") continue;
-
-        await tx.pagos.update({
-          where: { id_pago: pago.id_pago },
-          data: { estado: "Reembolsado" },
-        });
-
-        await tx.pagos.create({
-          data: {
-            id_inscripcion: id,
-            monto: pago.monto,
-            moneda: pago.moneda,
-            tipo: "Reembolso",
-            metodo_pago: pago.metodo_pago,
-            estado: "Reembolsado",
-            fecha_pago: new Date(),
-          },
-        });
-      }
-
-      return updated;
+    const id_expedicion = inscripcion.id_expedicion;
+    const snapshot = decryptInscripcionRecord({
+      ...inscripcion,
+      estado: INSCRIPCION_ESTADOS.CANCELADO,
+      reserva_pagada: false,
+      saldo_pagado: false,
     });
 
-    await ExpedicionesService.recalcularCupos(inscripcion.id_expedicion);
+    await prisma.$transaction(async (tx) => {
+      if (inscripcion.estado !== INSCRIPCION_ESTADOS.CANCELADO) {
+        for (const pago of inscripcion.pagos) {
+          if (pago.estado === "Reembolsado") continue;
 
-    return decryptInscripcionRecord(row);
+          await tx.pagos.update({
+            where: { id_pago: pago.id_pago },
+            data: { estado: "Reembolsado" },
+          });
+        }
+      }
+
+      await removeInscripcionRecord(tx, id);
+    });
+
+    await ExpedicionesService.recalcularCupos(id_expedicion);
+
+    return snapshot;
   }
 
   static async deleteInscripcion(id: number) {
@@ -620,14 +605,11 @@ export class InscripcionesService {
       throw new Error("Inscripción no encontrada");
     }
 
-    await prisma.expediciones.update({
-      where: { id_expedicion: inscripcion.id_expedicion },
-      data: { cupos_ocupados: { decrement: 1 } },
+    await prisma.$transaction(async (tx) => {
+      await removeInscripcionRecord(tx, id);
     });
 
-    await prisma.inscripciones.delete({
-      where: { id_inscripcion: id },
-    });
+    await ExpedicionesService.recalcularCupos(inscripcion.id_expedicion);
 
     return { success: true };
   }

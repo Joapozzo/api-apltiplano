@@ -5,6 +5,7 @@ import { getExpedicionEstadoInicial, getPresupuestoDiasValidez } from "../utils/
 import { emitSalidaEstadoCompleta } from "./notificaciones/notificaciones-emit.service.js";
 import { syncAlertasOperativas } from "./notificaciones/notificaciones-sync.service.js";
 import { decryptInscripcionRecord } from "../utils/data-protection.js";
+import { removeInscripcionRecord } from "../utils/inscripcion-cleanup.js";
 import { INSCRIPCION_ESTADOS } from "../utils/inscripcion-estado.js";
 
 export interface ExpedicionFilters {
@@ -413,9 +414,14 @@ export class ExpedicionesService {
       );
     }
 
-    // Eliminar (los precios se eliminan en cascada)
-    await prisma.expediciones.delete({
-      where: { id_expedicion: id },
+    await prisma.$transaction(async (tx) => {
+      for (const inscripcion of existente.inscripciones) {
+        await removeInscripcionRecord(tx, inscripcion.id_inscripcion);
+      }
+
+      await tx.inscripcion_tokens.deleteMany({ where: { id_expedicion: id } });
+      await tx.expedicion_coordinadores.deleteMany({ where: { id_expedicion: id } });
+      await tx.expediciones.delete({ where: { id_expedicion: id } });
     });
 
     return {
