@@ -1,14 +1,23 @@
 import crypto from "crypto";
+/** Producción / Vercel: front y API en dominios distintos → SameSite=None + Secure. */
+export function getCsrfCookieOptions() {
+    const isProduction = process.env.NODE_ENV === "production";
+    const onVercel = Boolean(process.env.VERCEL);
+    const crossOrigin = isProduction ||
+        onVercel ||
+        process.env.CSRF_CROSS_ORIGIN === "true";
+    return {
+        httpOnly: true,
+        secure: crossOrigin || isProduction,
+        sameSite: crossOrigin ? "none" : "lax",
+        maxAge: 24 * 60 * 60 * 1000,
+        path: "/",
+    };
+}
 /** Cookie httpOnly + token para doble envío (header X-CSRF-Token). */
 export function setCsrfCookie(res) {
     const csrfToken = generateCsrfToken();
-    const isProduction = process.env.NODE_ENV === "production";
-    res.cookie("csrf_token", csrfToken, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: "strict",
-        maxAge: 24 * 60 * 60 * 1000,
-    });
+    res.cookie("csrf_token", csrfToken, getCsrfCookieOptions());
     return csrfToken;
 }
 const CSRF_SECRET = process.env.CSRF_SECRET;

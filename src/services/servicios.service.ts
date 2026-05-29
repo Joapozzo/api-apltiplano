@@ -2,6 +2,7 @@ import { prisma } from "../database/prisma.js";
 import type { ApiSuccessResponse, ApiPaginatedResponse } from "../types/api.types.js";
 import { assertCatalogoActivo } from "../utils/catalog-referential.js";
 import { defaultSlugForNombre } from "../utils/servicio-slug.js";
+import { AppError } from "../utils/app-error.js";
 
 export interface ServicioFilters {
   activo?: boolean;
@@ -289,7 +290,7 @@ export class ServiciosService {
     });
 
     if (expediciones.length > 0) {
-      throw new Error("No se puede eliminar el servicio porque tiene expediciones asociadas");
+      throw new AppError("No se puede eliminar el servicio porque tiene expediciones asociadas", 409);
     }
 
     await prisma.servicios.delete({

@@ -1,5 +1,6 @@
 import { prisma } from "../database/prisma.js";
 import type { ApiSuccessResponse, ApiPaginatedResponse } from "../types/api.types.js";
+import { AppError } from "../utils/app-error.js";
 import { getExpedicionEstadoInicial, getPresupuestoDiasValidez } from "../utils/config-runtime.js";
 import { emitSalidaEstadoCompleta } from "./notificaciones/notificaciones-emit.service.js";
 import { syncAlertasOperativas } from "./notificaciones/notificaciones-sync.service.js";
@@ -406,8 +407,9 @@ export class ExpedicionesService {
     const inscripcionesActivas = existente.inscripciones.filter((i) => i.estado !== "Cancelado");
 
     if (inscripcionesActivas.length > 0) {
-      throw new Error(
+      throw new AppError(
         `No se puede eliminar la expedición "${existente.servicios.nombre}". Tiene ${inscripcionesActivas.length} inscripción(es) activa(s).`,
+        409,
       );
     }
 
