@@ -1,9 +1,13 @@
 import { prisma } from "../database/prisma.js";
+import { AppError } from "../utils/app-error.js";
 import { getExpedicionEstadoInicial, getPresupuestoDiasValidez } from "../utils/config-runtime.js";
 import { emitSalidaEstadoCompleta } from "./notificaciones/notificaciones-emit.service.js";
 import { syncAlertasOperativas } from "./notificaciones/notificaciones-sync.service.js";
 import { decryptInscripcionRecord } from "../utils/data-protection.js";
+import { removeInscripcionRecord } from "../utils/inscripcion-cleanup.js";
 import { INSCRIPCION_ESTADOS } from "../utils/inscripcion-estado.js";
+import { expedicionEsOperativa } from "../utils/expedicion-estado.js";
+import { purgeNotificacionesExpedicion, purgeNotificacionesSalidaExpedicion, } from "../utils/notificaciones-cleanup.js";
 export class ExpedicionesService {
     /**
      * Validar si una expedición tiene cupos disponibles
@@ -336,11 +340,17 @@ export class ExpedicionesService {
         // Verificar si tiene inscripciones activas
         const inscripcionesActivas = existente.inscripciones.filter((i) => i.estado !== "Cancelado");
         if (inscripcionesActivas.length > 0) {
-            throw new Error(`No se puede eliminar la expedición "${existente.servicios.nombre}". Tiene ${inscripcionesActivas.length} inscripción(es) activa(s).`);
+            throw new AppError(`No se puede eliminar la expedición "${existente.servicios.nombre}". Tiene ${inscripcionesActivas.length} inscripción(es) activa(s).`, 409);
         }
-        // Eliminar (los precios se eliminan en cascada)
-        await prisma.expediciones.delete({
-            where: { id_expedicion: id },
+        const inscripcionIds = existente.inscripciones.map((i) => i.id_inscripcion);
+        await prisma.$transaction(async (tx) => {
+            await purgeNotificacionesExpedicion(id, inscripcionIds, tx);
+            for (const inscripcion of existente.inscripciones) {
+                await removeInscripcionRecord(tx, inscripcion.id_inscripcion);
+            }
+            await tx.inscripcion_tokens.deleteMany({ where: { id_expedicion: id } });
+            await tx.expedicion_coordinadores.deleteMany({ where: { id_expedicion: id } });
+            await tx.expediciones.delete({ where: { id_expedicion: id } });
         });
         return {
             success: true,
@@ -373,6 +383,12 @@ export class ExpedicionesService {
                 },
             },
         });
+        if (!expedicionEsOperativa(estado)) {
+            await purgeNotificacionesSalidaExpedicion(id);
+        }
+        else {
+            await syncAlertasOperativas(false);
+        }
         return {
             success: true,
             data: expedicion,

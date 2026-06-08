@@ -1,5 +1,6 @@
 import { prisma } from "../../database/prisma.js";
 import { getNotificacionesRules, getInscripcionesIncompletasRules } from "../../utils/notificaciones-rules.js";
+import { purgeNotificacionesHuerfanas } from "../../utils/notificaciones-cleanup.js";
 import {
   getNotificacionUmbralCuposCriticos,
   getNotificacionDiasPresupuestoAviso,
@@ -29,6 +30,7 @@ export async function syncAlertasOperativas(throttle = true): Promise<{ synced: 
   const expediciones = await prisma.expediciones.findMany({
     where: {
       estado: { in: ["Activa", "Completa"] },
+      servicios: { activo: true },
     },
     include: {
       servicios: { select: { nombre: true } },
@@ -131,6 +133,7 @@ export async function syncAlertasOperativas(throttle = true): Promise<{ synced: 
   );
 
   await prisma.$transaction([...deleteOps, ...upsertOps]);
+  await purgeNotificacionesHuerfanas();
 
   return { synced: true, count: allRules.length };
 }

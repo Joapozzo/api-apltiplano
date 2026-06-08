@@ -1,7 +1,9 @@
 import { prisma } from "../../database/prisma.js";
 import { syncAlertasOperativas } from "../notificaciones/notificaciones-sync.service.js";
+import { purgeNotificacionesHuerfanas } from "../../utils/notificaciones-cleanup.js";
 export async function getDashboardAlertas() {
     await syncAlertasOperativas(true);
+    await purgeNotificacionesHuerfanas();
     const notificaciones = await prisma.notificaciones_admin.findMany({
         where: {
             archivada: false,
@@ -36,10 +38,13 @@ export async function getDashboardAlertas() {
     });
     const presupuestosPorVencer = presupuestos.map((n) => {
         const meta = n.metadata;
+        const presupuestoHasta = meta?.presupuesto_valido_hasta
+            ? new Date(meta.presupuesto_valido_hasta)
+            : n.created_at;
         return {
             id_expedicion: meta?.id_expedicion || 0,
             nombre_servicio: n.mensaje.split(" — ")[0] || "",
-            presupuesto_valido_hasta: n.created_at,
+            presupuesto_valido_hasta: presupuestoHasta,
         };
     });
     const hoy = new Date();

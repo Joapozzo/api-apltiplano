@@ -1,6 +1,9 @@
 import { prisma } from "../database/prisma.js";
 import { assertCatalogoActivo } from "../utils/catalog-referential.js";
+import { purgeNotificacionesServicio } from "../utils/notificaciones-cleanup.js";
 import { defaultSlugForNombre } from "../utils/servicio-slug.js";
+import { AppError } from "../utils/app-error.js";
+import { normalizeExperienciaRequerida } from "../utils/servicio-payload.js";
 export class ServiciosService {
     /**
      * Obtener todos los servicios con filtros opcionales
@@ -147,7 +150,7 @@ export class ServiciosService {
                 temperatura_dia_max: data.temperatura_dia_max || null,
                 temperatura_noche_min: data.temperatura_noche_min || null,
                 temporada_recomendada: data.temporada_recomendada || [],
-                experiencia_requerida: data.experiencia_requerida || null,
+                experiencia_requerida: normalizeExperienciaRequerida(data.experiencia_requerida),
                 horas_caminata_diarias: data.horas_caminata_diarias || null,
                 peso_mochila: data.peso_mochila || null,
                 conocimientos_tecnicos_requeridos: data.conocimientos_tecnicos_requeridos || false,
@@ -205,7 +208,9 @@ export class ServiciosService {
                 temperatura_dia_max: data.temperatura_dia_max !== undefined ? data.temperatura_dia_max : null,
                 temperatura_noche_min: data.temperatura_noche_min !== undefined ? data.temperatura_noche_min : null,
                 temporada_recomendada: data.temporada_recomendada || [],
-                experiencia_requerida: data.experiencia_requerida !== undefined ? data.experiencia_requerida : null,
+                experiencia_requerida: data.experiencia_requerida !== undefined
+                    ? normalizeExperienciaRequerida(data.experiencia_requerida)
+                    : null,
                 horas_caminata_diarias: data.horas_caminata_diarias !== undefined ? data.horas_caminata_diarias : null,
                 peso_mochila: data.peso_mochila !== undefined ? data.peso_mochila : null,
                 conocimientos_tecnicos_requeridos: data.conocimientos_tecnicos_requeridos !== undefined ? data.conocimientos_tecnicos_requeridos : false,
@@ -252,7 +257,7 @@ export class ServiciosService {
             where: { id_servicio: id },
         });
         if (expediciones.length > 0) {
-            throw new Error("No se puede eliminar el servicio porque tiene expediciones asociadas");
+            throw new AppError("No se puede eliminar el servicio porque tiene expediciones asociadas", 409);
         }
         await prisma.servicios.delete({
             where: { id_servicio: id },
@@ -273,10 +278,14 @@ export class ServiciosService {
         if (!servicio) {
             throw new Error("Servicio no encontrado");
         }
+        const nuevoActivo = !servicio.activo;
         const updated = await prisma.servicios.update({
             where: { id_servicio: id },
-            data: { activo: !servicio.activo },
+            data: { activo: nuevoActivo },
         });
+        if (!nuevoActivo) {
+            await purgeNotificacionesServicio(id);
+        }
         return {
             success: true,
             data: updated,

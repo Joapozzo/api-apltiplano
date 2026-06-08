@@ -1,5 +1,6 @@
 import { prisma } from "../../database/prisma.js";
 import { syncAlertasOperativas } from "../notificaciones/notificaciones-sync.service.js";
+import { purgeNotificacionesHuerfanas } from "../../utils/notificaciones-cleanup.js";
 
 export interface DashboardAlertas {
   expediciones_cupos_criticos: Array<{
@@ -39,6 +40,7 @@ export interface DashboardAlertas {
 
 export async function getDashboardAlertas(): Promise<DashboardAlertas> {
   await syncAlertasOperativas(true);
+  await purgeNotificacionesHuerfanas();
 
   const notificaciones = await prisma.notificaciones_admin.findMany({
     where: {
@@ -79,11 +81,14 @@ export async function getDashboardAlertas(): Promise<DashboardAlertas> {
   });
 
   const presupuestosPorVencer = presupuestos.map((n) => {
-    const meta = n.metadata as { id_expedicion?: number };
+    const meta = n.metadata as { id_expedicion?: number; presupuesto_valido_hasta?: string } | null;
+    const presupuestoHasta = meta?.presupuesto_valido_hasta
+      ? new Date(meta.presupuesto_valido_hasta)
+      : n.created_at;
     return {
       id_expedicion: meta?.id_expedicion || 0,
       nombre_servicio: n.mensaje.split(" — ")[0] || "",
-      presupuesto_valido_hasta: n.created_at,
+      presupuesto_valido_hasta: presupuestoHasta,
     };
   });
 

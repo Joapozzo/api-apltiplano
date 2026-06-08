@@ -98,7 +98,10 @@ export function getNotificacionesRules(
           titulo: "Presupuesto vencido",
           mensaje: `${exp.servicios.nombre} — vigente hasta ${exp.presupuesto_valido_hasta.toLocaleDateString("es-AR")}`,
           enlace: `/adm/salidas?id=${exp.id_expedicion}`,
-          metadata: { id_expedicion: exp.id_expedicion },
+          metadata: {
+            id_expedicion: exp.id_expedicion,
+            presupuesto_valido_hasta: exp.presupuesto_valido_hasta.toISOString(),
+          },
         });
       } else if (diasRestantes >= 0 && diasRestantes <= dias_presupuesto_aviso) {
         nuevas.push({
@@ -108,7 +111,10 @@ export function getNotificacionesRules(
           titulo: "Presupuesto por vencer",
           mensaje: `${exp.servicios.nombre} — vence en ${diasRestantes} día(s)`,
           enlace: `/adm/salidas?id=${exp.id_expedicion}`,
-          metadata: { id_expedicion: exp.id_expedicion },
+          metadata: {
+            id_expedicion: exp.id_expedicion,
+            presupuesto_valido_hasta: exp.presupuesto_valido_hasta.toISOString(),
+          },
         });
       } else {
         archivar.push(`SALIDA_PRESUPUESTO_POR_VENCER:exp:${exp.id_expedicion}`);

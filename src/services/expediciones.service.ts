@@ -7,6 +7,11 @@ import { syncAlertasOperativas } from "./notificaciones/notificaciones-sync.serv
 import { decryptInscripcionRecord } from "../utils/data-protection.js";
 import { removeInscripcionRecord } from "../utils/inscripcion-cleanup.js";
 import { INSCRIPCION_ESTADOS } from "../utils/inscripcion-estado.js";
+import { expedicionEsOperativa } from "../utils/expedicion-estado.js";
+import {
+  purgeNotificacionesExpedicion,
+  purgeNotificacionesSalidaExpedicion,
+} from "../utils/notificaciones-cleanup.js";
 
 export interface ExpedicionFilters {
   estado?: string;
@@ -414,7 +419,11 @@ export class ExpedicionesService {
       );
     }
 
+    const inscripcionIds = existente.inscripciones.map((i) => i.id_inscripcion);
+
     await prisma.$transaction(async (tx) => {
+      await purgeNotificacionesExpedicion(id, inscripcionIds, tx);
+
       for (const inscripcion of existente.inscripciones) {
         await removeInscripcionRecord(tx, inscripcion.id_inscripcion);
       }
@@ -459,6 +468,12 @@ export class ExpedicionesService {
         },
       },
     });
+
+    if (!expedicionEsOperativa(estado)) {
+      await purgeNotificacionesSalidaExpedicion(id);
+    } else {
+      await syncAlertasOperativas(false);
+    }
 
     return {
       success: true,
