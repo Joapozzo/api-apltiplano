@@ -218,6 +218,15 @@ export class ServiciosService {
    * Actualizar servicio
    */
   static async update(id: number, data: any) {
+    const existing = await prisma.servicios.findUnique({
+      where: { id_servicio: id },
+      select: { activo: true },
+    });
+
+    if (!existing) {
+      throw new Error("Servicio no encontrado");
+    }
+
     const servicio = await prisma.servicios.update({
       where: { id_servicio: id },
       data: {
@@ -261,7 +270,7 @@ export class ServiciosService {
         diferenciadores: data.diferenciadores || [],
         gestion_cargas: data.gestion_cargas || [],
         destacado: data.destacado !== undefined ? data.destacado : false,
-        activo: data.activo !== undefined ? data.activo : true,
+        activo: data.activo !== undefined ? data.activo : existing.activo,
         url_foto: data.url_foto !== undefined ? data.url_foto : null,
         urls_fotos: data.urls_fotos || [],
       },
