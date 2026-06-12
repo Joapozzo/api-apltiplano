@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AuthService } from "../services/auth.service.js";
+import { mapUserResponse } from "../services/usuarios.shared.js";
 import { extractBearerToken } from "../utils/auth-header.js";
 import { issueCsrfToken } from "../middlewares/csrf.js";
 import { asyncHandler } from "../middlewares/error-handler.js";
@@ -36,18 +37,22 @@ export class AuthController {
         });
     });
     static me = asyncHandler(async (req, res) => {
-        const token = extractBearerToken(req.header("authorization"));
-        if (!token) {
+        if (!req.auth || !req.authUser) {
             res.status(401).json({
                 success: false,
-                error: "Falta el token Bearer de Firebase",
-                code: "MISSING_BEARER_TOKEN",
+                error: "La solicitud no está autenticada",
+                code: "UNAUTHENTICATED",
             });
             return;
         }
-        const result = await AuthService.getCurrentUser(token);
         const csrfToken = issueCsrfToken(req, res);
-        res.json({ ...result, csrfToken });
+        res.json({
+            success: true,
+            data: {
+                user: mapUserResponse(req.authUser),
+            },
+            csrfToken,
+        });
     });
 }
 //# sourceMappingURL=auth.controller.js.map

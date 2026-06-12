@@ -10,7 +10,9 @@ export async function authenticate(req, res, next) {
                 code: "MISSING_BEARER_TOKEN",
             });
         }
-        req.auth = await AuthService.authenticateRequest(token);
+        const { auth, profile } = await AuthService.authenticateRequest(token);
+        req.auth = auth;
+        req.authUser = profile;
         next();
     }
     catch (error) {

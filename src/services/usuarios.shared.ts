@@ -3,7 +3,8 @@ import type { AppRole, AuthenticatedRequestUser } from "../types/auth.types.js";
 import { APP_ROLES } from "../types/auth.types.js";
 import { decryptClientePii } from "../utils/data-protection.js";
 
-export const userBaseSelect = {
+/** Perfil de sesión (/auth/me, authenticate): sin agregados pesados. */
+export const userMeSelect = {
   id_usuario: true,
   firebase_uid: true,
   email: true,
@@ -25,6 +26,19 @@ export const userBaseSelect = {
       apellido: true,
       email: true,
       fecha_creacion: true,
+    },
+  },
+} as const;
+
+export const userBaseSelect = {
+  ...userMeSelect,
+  cliente: {
+    select: {
+      id_cliente: true,
+      nombre: true,
+      apellido: true,
+      email: true,
+      fecha_creacion: true,
       _count: {
         select: {
           inscripciones: true,
@@ -38,11 +52,17 @@ type UserWithRelations = Prisma.usuariosGetPayload<{
   select: typeof userBaseSelect;
 }>;
 
-function mapRoles(usuarioRoles: UserWithRelations["usuario_roles"]): AppRole[] {
+type UserMeRelations = Prisma.usuariosGetPayload<{
+  select: typeof userMeSelect;
+}>;
+
+type UserForResponse = UserWithRelations | UserMeRelations;
+
+function mapRoles(usuarioRoles: UserForResponse["usuario_roles"]): AppRole[] {
   return usuarioRoles.map((item) => item.roles.codigo as AppRole);
 }
 
-export function mapAuthenticatedUser(user: UserWithRelations): AuthenticatedRequestUser {
+export function mapAuthenticatedUser(user: UserForResponse): AuthenticatedRequestUser {
   return {
     id_usuario: user.id_usuario,
     firebase_uid: user.firebase_uid,
@@ -54,7 +74,12 @@ export function mapAuthenticatedUser(user: UserWithRelations): AuthenticatedRequ
   };
 }
 
-export function mapUserResponse(user: UserWithRelations) {
+function clienteInscripcionesCount(cliente: UserForResponse["cliente"]): number {
+  if (!cliente || !("_count" in cliente) || !cliente._count) return 0;
+  return cliente._count.inscripciones;
+}
+
+export function mapUserResponse(user: UserForResponse) {
   const roles = mapRoles(user.usuario_roles);
   const nombre = (decryptClientePii({ nombre: user.nombre }).nombre as string) ?? user.nombre;
   const apellido = (decryptClientePii({ apellido: user.apellido }).apellido as string) ?? user.apellido;
@@ -79,7 +104,7 @@ export function mapUserResponse(user: UserWithRelations) {
           apellido: cliente.apellido as string,
           email: cliente.email as string,
           fecha_creacion: user.cliente!.fecha_creacion,
-          total_inscripciones: user.cliente!._count.inscripciones,
+          total_inscripciones: clienteInscripcionesCount(user.cliente),
         }
       : null,
   };

@@ -1,7 +1,7 @@
 import { prisma } from "../database/prisma.js";
 import { firebaseAdminAuth } from "./firebase-admin.service.js";
 import { APP_ROLES } from "../types/auth.types.js";
-import { mapAuthenticatedUser, mapUserResponse, syncClienteFromUsuario, userBaseSelect } from "./usuarios.shared.js";
+import { mapAuthenticatedUser, mapUserResponse, syncClienteFromUsuario, userBaseSelect, userMeSelect, } from "./usuarios.shared.js";
 export class AuthServiceError extends Error {
     status;
     code;
@@ -199,7 +199,7 @@ export class AuthService {
         const decoded = await this.verifyIdToken(idToken);
         const user = await prisma.usuarios.findUnique({
             where: { firebase_uid: decoded.uid },
-            select: userBaseSelect,
+            select: userMeSelect,
         });
         if (!user) {
             throw new AuthServiceError("Usuario no registrado en la base de datos", 401, "LOCAL_USER_NOT_FOUND");
@@ -207,7 +207,10 @@ export class AuthService {
         if (!user.activo) {
             throw new AuthServiceError("El usuario estA inactivo", 403, "USER_INACTIVE");
         }
-        return mapAuthenticatedUser(user);
+        return {
+            auth: mapAuthenticatedUser(user),
+            profile: user,
+        };
     }
 }
 //# sourceMappingURL=auth.service.js.map

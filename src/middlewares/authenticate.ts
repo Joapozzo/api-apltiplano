@@ -14,7 +14,9 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       });
     }
 
-    req.auth = await AuthService.authenticateRequest(token);
+    const { auth, profile } = await AuthService.authenticateRequest(token);
+    req.auth = auth;
+    req.authUser = profile;
     next();
   } catch (error) {
     if (error instanceof AuthServiceError) {

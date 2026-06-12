@@ -3,7 +3,13 @@ import { prisma } from "../database/prisma.js";
 import { firebaseAdminAuth } from "./firebase-admin.service.js";
 import type { AuthenticatedRequestUser } from "../types/auth.types.js";
 import { APP_ROLES } from "../types/auth.types.js";
-import { mapAuthenticatedUser, mapUserResponse, syncClienteFromUsuario, userBaseSelect } from "./usuarios.shared.js";
+import {
+  mapAuthenticatedUser,
+  mapUserResponse,
+  syncClienteFromUsuario,
+  userBaseSelect,
+  userMeSelect,
+} from "./usuarios.shared.js";
 
 export interface RegisterWithFirebaseInput {
   nombre?: string | undefined;
@@ -258,12 +264,12 @@ export class AuthService {
     };
   }
 
-  static async authenticateRequest(idToken: string): Promise<AuthenticatedRequestUser> {
+  static async authenticateRequest(idToken: string) {
     const decoded = await this.verifyIdToken(idToken);
 
     const user = await prisma.usuarios.findUnique({
       where: { firebase_uid: decoded.uid },
-      select: userBaseSelect,
+      select: userMeSelect,
     });
 
     if (!user) {
@@ -274,6 +280,9 @@ export class AuthService {
       throw new AuthServiceError("El usuario estA inactivo", 403, "USER_INACTIVE");
     }
 
-    return mapAuthenticatedUser(user);
+    return {
+      auth: mapAuthenticatedUser(user),
+      profile: user,
+    };
   }
 }
