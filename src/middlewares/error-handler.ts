@@ -3,6 +3,7 @@ import type { ZodError } from "zod";
 import type { MulterError } from "multer";
 import { AppError } from "../utils/app-error.js";
 import { logger } from "../services/logger.service.js";
+import { GENERIC_SERVER_ERROR, isPrismaInternalError } from "../utils/prisma-errors.js";
 
 interface PrismaClientKnownRequestError extends Error {
   code: string;
@@ -93,6 +94,15 @@ export function globalErrorHandler(err: Error, _req: Request, res: Response, _ne
     }
   }
 
+  // Prisma client/schema mismatch, invalid query shape, etc.
+  if (err.name === "PrismaClientValidationError" || isPrismaInternalError(err)) {
+    res.status(500).json({
+      success: false,
+      error: GENERIC_SERVER_ERROR,
+    });
+    return;
+  }
+
   // Handle typed service errors with a status property (CatalogosServiceError, UsuariosServiceError, ConfigServiceError, AuthServiceError, etc.)
   const errorWithStatus = err as { status?: number; code?: string };
   if (typeof errorWithStatus.status === "number") {
@@ -131,13 +141,10 @@ export function globalErrorHandler(err: Error, _req: Request, res: Response, _ne
     return;
   }
 
-  // Fallback: 500 Internal Server Error
+  // Fallback: 500 Internal Server Error — never expose raw stack/details to clients
   res.status(500).json({
     success: false,
-    error:
-      process.env.NODE_ENV === "production"
-        ? "Error interno del servidor"
-        : err.message || "Error interno del servidor",
+    error: GENERIC_SERVER_ERROR,
   });
 }
 

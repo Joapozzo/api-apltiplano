@@ -70,4 +70,12 @@ export class ServiciosController {
     const result = await ServiciosService.toggleDestacado(parseInt(id));
     res.json(result);
   });
+
+  static updateItinerarios = asyncHandler(async (req: Request, res: Response) => {
+    const id = parseParamId(req.params.id);
+    if (!id) throw new AppError("ID es requerido", 400);
+
+    const result = await ServiciosService.updateItinerarios(parseInt(id), req.body);
+    res.json(result);
+  });
 }

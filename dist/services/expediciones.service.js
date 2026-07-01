@@ -1,5 +1,6 @@
 import { prisma } from "../database/prisma.js";
 import { AppError } from "../utils/app-error.js";
+import { rethrowAsSafeAppError } from "../utils/prisma-errors.js";
 import { getExpedicionEstadoInicial, getPresupuestoDiasValidez } from "../utils/config-runtime.js";
 import { emitSalidaEstadoCompleta } from "./notificaciones/notificaciones-emit.service.js";
 import { syncAlertasOperativas } from "./notificaciones/notificaciones-sync.service.js";
@@ -228,32 +229,39 @@ export class ExpedicionesService {
             presupuestoHasta = validezDate;
         }
         // Crear expedición con precios
-        const expedicion = await prisma.expediciones.create({
-            data: {
-                id_servicio: data.id_servicio,
-                fecha_salida: fechaSalida,
-                fecha_fin: fechaFin,
-                cupos_disponibles: data.cupos_disponibles,
-                cupos_ocupados: 0,
-                estado: data.estado || estadoInicial,
-                presupuesto_valido_hasta: presupuestoHasta,
-                expedicion_precios: {
-                    create: data.precios.map((p) => ({
-                        nombre_paquete: p.nombre_paquete,
-                        precio: p.precio,
-                        moneda: p.moneda,
-                    })),
-                },
-            },
-            include: {
-                servicios: {
-                    select: {
-                        nombre: true,
+        let expedicion;
+        try {
+            expedicion = await prisma.expediciones.create({
+                data: {
+                    id_servicio: data.id_servicio,
+                    fecha_salida: fechaSalida,
+                    fecha_fin: fechaFin,
+                    cupos_disponibles: data.cupos_disponibles,
+                    cupos_ocupados: 0,
+                    estado: data.estado || estadoInicial,
+                    presupuesto_valido_hasta: presupuestoHasta,
+                    mostrar_precios: data.mostrar_precios ?? false,
+                    expedicion_precios: {
+                        create: data.precios.map((p) => ({
+                            nombre_paquete: p.nombre_paquete,
+                            precio: p.precio,
+                            moneda: p.moneda,
+                        })),
                     },
                 },
-                expedicion_precios: true,
-            },
-        });
+                include: {
+                    servicios: {
+                        select: {
+                            nombre: true,
+                        },
+                    },
+                    expedicion_precios: true,
+                },
+            });
+        }
+        catch (err) {
+            rethrowAsSafeAppError(err, "No se pudo crear la salida. Intentá de nuevo en unos minutos.");
+        }
         return {
             success: true,
             data: expedicion,
@@ -283,39 +291,46 @@ export class ExpedicionesService {
             throw new Error("La fecha de fin debe ser posterior a la fecha de salida");
         }
         // Actualizar expedición usando transacción
-        const expedicion = await prisma.$transaction(async (tx) => {
-            // Eliminar precios existentes
-            await tx.expedicion_precios.deleteMany({
-                where: { id_expedicion: id },
-            });
-            // Actualizar expedición y crear nuevos precios
-            return tx.expediciones.update({
-                where: { id_expedicion: id },
-                data: {
-                    id_servicio: data.id_servicio,
-                    fecha_salida: fechaSalida,
-                    fecha_fin: fechaFin,
-                    cupos_disponibles: data.cupos_disponibles,
-                    estado: data.estado,
-                    presupuesto_valido_hasta: data.presupuesto_valido_hasta ? new Date(data.presupuesto_valido_hasta) : null,
-                    expedicion_precios: {
-                        create: data.precios.map((p) => ({
-                            nombre_paquete: p.nombre_paquete,
-                            precio: p.precio,
-                            moneda: p.moneda,
-                        })),
-                    },
-                },
-                include: {
-                    servicios: {
-                        select: {
-                            nombre: true,
+        let expedicion;
+        try {
+            expedicion = await prisma.$transaction(async (tx) => {
+                // Eliminar precios existentes
+                await tx.expedicion_precios.deleteMany({
+                    where: { id_expedicion: id },
+                });
+                // Actualizar expedición y crear nuevos precios
+                return tx.expediciones.update({
+                    where: { id_expedicion: id },
+                    data: {
+                        id_servicio: data.id_servicio,
+                        fecha_salida: fechaSalida,
+                        fecha_fin: fechaFin,
+                        cupos_disponibles: data.cupos_disponibles,
+                        estado: data.estado,
+                        presupuesto_valido_hasta: data.presupuesto_valido_hasta ? new Date(data.presupuesto_valido_hasta) : null,
+                        mostrar_precios: data.mostrar_precios ?? false,
+                        expedicion_precios: {
+                            create: data.precios.map((p) => ({
+                                nombre_paquete: p.nombre_paquete,
+                                precio: p.precio,
+                                moneda: p.moneda,
+                            })),
                         },
                     },
-                    expedicion_precios: true,
-                },
+                    include: {
+                        servicios: {
+                            select: {
+                                nombre: true,
+                            },
+                        },
+                        expedicion_precios: true,
+                    },
+                });
             });
-        });
+        }
+        catch (err) {
+            rethrowAsSafeAppError(err, "No se pudo actualizar la salida. Intentá de nuevo en unos minutos.");
+        }
         return {
             success: true,
             data: expedicion,

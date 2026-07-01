@@ -5,6 +5,10 @@ import { purgeNotificacionesServicio } from "../utils/notificaciones-cleanup.js"
 import { defaultSlugForNombre } from "../utils/servicio-slug.js";
 import { AppError } from "../utils/app-error.js";
 import { normalizeExperienciaRequerida } from "../utils/servicio-payload.js";
+import {
+  normalizeItinerariosPayload,
+  syncItinerariosForServicio,
+} from "../utils/itinerario-payload.js";
 
 export interface ServicioFilters {
   activo?: boolean;
@@ -159,6 +163,8 @@ export class ServiciosService {
       assertCatalogoActivo("dificultades", data.id_dificultad),
     ]);
 
+    const itinerariosPayload = normalizeItinerariosPayload(data.itinerarios);
+
     const servicio = await prisma.servicios.create({
       data: {
         nombre: data.nombre,
@@ -172,7 +178,8 @@ export class ServiciosService {
         desnivel: data.desnivel || null,
         descripcion_completa: data.descripcion_completa || null,
         desc_resumen: data.desc_resumen || null,
-        descripcion_recorrido: data.descripcion_recorrido || null,
+        descripcion_recorrido:
+          data.itinerarios !== undefined ? null : data.descripcion_recorrido || null,
         sobre_lugar: data.sobre_lugar || null,
         clima_recomendado: data.clima_recomendado || null,
         temperatura_dia_min: data.temperatura_dia_min || null,
@@ -208,9 +215,27 @@ export class ServiciosService {
       },
     });
 
+    if (data.itinerarios !== undefined) {
+      await syncItinerariosForServicio(
+        servicio.id_servicio,
+        itinerariosPayload,
+        data.duracion_dias,
+      );
+    }
+
+    const servicioConItinerarios = await prisma.servicios.findUnique({
+      where: { id_servicio: servicio.id_servicio },
+      include: {
+        lugares: true,
+        actividades: true,
+        dificultades: true,
+        itinerarios: { orderBy: { dia: "asc" } },
+      },
+    });
+
     return {
       success: true,
-      data: servicio,
+      data: servicioConItinerarios ?? servicio,
     } as ApiSuccessResponse<typeof servicio>;
   }
 
@@ -227,6 +252,8 @@ export class ServiciosService {
       throw new Error("Servicio no encontrado");
     }
 
+    const itinerariosPayload = normalizeItinerariosPayload(data.itinerarios);
+
     const servicio = await prisma.servicios.update({
       where: { id_servicio: id },
       data: {
@@ -239,9 +266,14 @@ export class ServiciosService {
         duracion_noches: data.duracion_noches,
         altura_maxima: data.altura_maxima,
         desnivel: data.desnivel !== undefined ? data.desnivel : null,
-        descripcion_completa: data.descripcion_completa !== undefined ? data.descripcion_completa : null,
+        descripcion_completa:
+          data.descripcion_completa !== undefined ? data.descripcion_completa : null,
         desc_resumen: data.desc_resumen !== undefined ? data.desc_resumen : null,
-        descripcion_recorrido: data.descripcion_recorrido !== undefined ? data.descripcion_recorrido : null,
+        ...(data.itinerarios !== undefined
+          ? { descripcion_recorrido: null }
+          : data.descripcion_recorrido !== undefined
+            ? { descripcion_recorrido: data.descripcion_recorrido }
+            : {}),
         sobre_lugar: data.sobre_lugar !== undefined ? data.sobre_lugar : null,
         clima_recomendado: data.clima_recomendado !== undefined ? data.clima_recomendado : null,
         temperatura_dia_min: data.temperatura_dia_min !== undefined ? data.temperatura_dia_min : null,
@@ -278,6 +310,69 @@ export class ServiciosService {
         lugares: true,
         actividades: true,
         dificultades: true,
+      },
+    });
+
+    if (data.itinerarios !== undefined) {
+      await syncItinerariosForServicio(
+        id,
+        itinerariosPayload,
+        data.duracion_dias,
+      );
+    }
+
+    const servicioConItinerarios = await prisma.servicios.findUnique({
+      where: { id_servicio: id },
+      include: {
+        lugares: true,
+        actividades: true,
+        dificultades: true,
+        itinerarios: { orderBy: { dia: "asc" } },
+      },
+    });
+
+    return {
+      success: true,
+      data: servicioConItinerarios ?? servicio,
+    } as ApiSuccessResponse<typeof servicio>;
+  }
+
+  /**
+   * Actualizar solo el itinerario (recorrido) de un servicio existente.
+   */
+  static async updateItinerarios(
+    id: number,
+    data: { itinerarios?: unknown; duracion_dias?: number },
+  ) {
+    const existing = await prisma.servicios.findUnique({
+      where: { id_servicio: id },
+      select: { duracion_dias: true },
+    });
+
+    if (!existing) {
+      throw new AppError("Servicio no encontrado", 404);
+    }
+
+    const duracionDias = data.duracion_dias ?? existing.duracion_dias;
+    const itinerariosPayload = normalizeItinerariosPayload(data.itinerarios);
+
+    await prisma.servicios.update({
+      where: { id_servicio: id },
+      data: {
+        descripcion_recorrido: null,
+        ...(data.duracion_dias !== undefined ? { duracion_dias: data.duracion_dias } : {}),
+      },
+    });
+
+    await syncItinerariosForServicio(id, itinerariosPayload, duracionDias);
+
+    const servicio = await prisma.servicios.findUnique({
+      where: { id_servicio: id },
+      include: {
+        lugares: true,
+        actividades: true,
+        dificultades: true,
+        itinerarios: { orderBy: { dia: "asc" } },
       },
     });
 

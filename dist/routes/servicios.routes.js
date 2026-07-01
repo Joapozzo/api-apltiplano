@@ -9,5 +9,6 @@ router.put("/:id", ServiciosController.update);
 router.delete("/:id", ServiciosController.delete);
 router.patch("/:id/toggle-activo", ServiciosController.toggleActivo);
 router.patch("/:id/toggle-destacado", ServiciosController.toggleDestacado);
+router.patch("/:id/itinerarios", ServiciosController.updateItinerarios);
 export default router;
 //# sourceMappingURL=servicios.routes.js.map
