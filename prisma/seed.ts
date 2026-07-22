@@ -36,9 +36,9 @@ async function main() {
     { clave: "sistema.presupuesto_dias_validez", valor: "15", tipo: "number", grupo: "sistema", etiqueta: "Días de validez del presupuesto", editable: true },
     { clave: "sistema.expedicion_estado_inicial", valor: "Activa", tipo: "string", grupo: "sistema", etiqueta: "Estado inicial de expediciones", editable: true },
     { clave: "sistema.inscripcion_estado_inicial", valor: "Inscripto", tipo: "string", grupo: "inscripcion", etiqueta: "Estado inicial de inscripciones", editable: true },
-    { clave: "contacto.whatsapp", valor: "", tipo: "string", grupo: "contacto", etiqueta: "WhatsApp", editable: true },
-    { clave: "contacto.email", valor: "", tipo: "string", grupo: "contacto", etiqueta: "Email de contacto", editable: true },
-    { clave: "contacto.telefono", valor: "", tipo: "string", grupo: "contacto", etiqueta: "Teléfono", editable: true },
+    { clave: "contacto.whatsapp", valor: "+54 9 3837 49-8552", tipo: "string", grupo: "contacto", etiqueta: "WhatsApp", editable: true },
+    { clave: "contacto.email", valor: "info@altiplano.com", tipo: "string", grupo: "contacto", etiqueta: "Email de contacto", editable: true },
+    { clave: "contacto.telefono", valor: "+54 9 3837 49-8552", tipo: "string", grupo: "contacto", etiqueta: "Teléfono", editable: true },
     { clave: "inscripcion.texto_confidencialidad", valor: "Los datos médicos son confidenciales y solo se usarán en caso de emergencia.", tipo: "string", grupo: "inscripcion", etiqueta: "Texto de confidencialidad (Step 3)", editable: true },
     { clave: "branding.nombre_empresa", valor: "Altiplano", tipo: "string", grupo: "branding", etiqueta: "Nombre de la empresa", editable: true },
     { clave: "notificaciones.umbral_cupos_criticos", valor: "2", tipo: "number", grupo: "notificaciones", etiqueta: "Umbral de cupos críticos", editable: true },
@@ -51,7 +51,12 @@ async function main() {
   for (const setting of configSettings) {
     await prisma.configuracion_sistema.upsert({
       where: { clave: setting.clave },
-      update: { valor: setting.valor },
+      update: {
+        tipo: setting.tipo,
+        grupo: setting.grupo,
+        etiqueta: setting.etiqueta,
+        editable: setting.editable,
+      },
       create: setting,
     });
   }

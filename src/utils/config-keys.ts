@@ -122,7 +122,7 @@ export const CONFIG_REGISTRY: Record<
     editable: true,
     validate: validatePhone,
     publicReadable: true,
-    defaultValue: "",
+    defaultValue: "+54 9 3837 49-8552",
   },
   [CONFIG_KEYS.CONTACTO_EMAIL]: {
     tipo: "string",
@@ -130,10 +130,10 @@ export const CONFIG_REGISTRY: Record<
     etiqueta: "Email de contacto",
     editable: true,
     validate: (v) => {
-      if (v && validateEmail) validateEmail(v);
+      if (v) validateEmail(v);
     },
     publicReadable: true,
-    defaultValue: "",
+    defaultValue: "info@altiplano.com",
   },
   [CONFIG_KEYS.CONTACTO_TELEFONO]: {
     tipo: "string",
@@ -142,7 +142,7 @@ export const CONFIG_REGISTRY: Record<
     editable: true,
     validate: validatePhone,
     publicReadable: true,
-    defaultValue: "",
+    defaultValue: "+54 9 3837 49-8552",
   },
   [CONFIG_KEYS.INSCRIPCION_TEXTO_CONFIDENCIALIDAD]: {
     tipo: "string",
