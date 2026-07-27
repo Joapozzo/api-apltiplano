@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "servicios" ADD COLUMN "foto_focal_x" DOUBLE PRECISION NOT NULL DEFAULT 0.5;
+ALTER TABLE "servicios" ADD COLUMN "foto_focal_y" DOUBLE PRECISION NOT NULL DEFAULT 0.5;
+ALTER TABLE "servicios" ADD COLUMN "fotos_focal" JSONB NOT NULL DEFAULT '{}';

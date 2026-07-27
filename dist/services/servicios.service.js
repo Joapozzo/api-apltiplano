@@ -173,6 +173,13 @@ export class ServiciosService {
                 activo: data.activo !== undefined ? data.activo : true,
                 url_foto: data.url_foto || null,
                 urls_fotos: data.urls_fotos || [],
+                foto_focal_x: data.foto_focal_x != null && Number.isFinite(Number(data.foto_focal_x))
+                    ? Number(data.foto_focal_x)
+                    : 0.5,
+                foto_focal_y: data.foto_focal_y != null && Number.isFinite(Number(data.foto_focal_y))
+                    ? Number(data.foto_focal_y)
+                    : 0.5,
+                fotos_focal: data.fotos_focal && typeof data.fotos_focal === "object" ? data.fotos_focal : {},
             },
             include: {
                 lugares: true,
@@ -257,6 +264,25 @@ export class ServiciosService {
                 activo: data.activo !== undefined ? data.activo : existing.activo,
                 url_foto: data.url_foto !== undefined ? data.url_foto : null,
                 urls_fotos: data.urls_fotos || [],
+                ...(data.foto_focal_x !== undefined
+                    ? {
+                        foto_focal_x: Number.isFinite(Number(data.foto_focal_x))
+                            ? Number(data.foto_focal_x)
+                            : 0.5,
+                    }
+                    : {}),
+                ...(data.foto_focal_y !== undefined
+                    ? {
+                        foto_focal_y: Number.isFinite(Number(data.foto_focal_y))
+                            ? Number(data.foto_focal_y)
+                            : 0.5,
+                    }
+                    : {}),
+                ...(data.fotos_focal !== undefined
+                    ? {
+                        fotos_focal: data.fotos_focal && typeof data.fotos_focal === "object" ? data.fotos_focal : {},
+                    }
+                    : {}),
             },
             include: {
                 lugares: true,

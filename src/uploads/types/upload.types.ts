@@ -11,7 +11,7 @@ export interface UploadPayload {
   buffer: Buffer;
   mimetype: string;
   carpeta: string;
-  public_id?: string;
+  public_id?: string | undefined;
 }
 
 export interface StorageAdapter {
@@ -24,7 +24,16 @@ export interface SubirImagenDTO {
   id_servicio: number;
   buffer: Buffer;
   mimetype: string;
-  public_id?: string;
+  public_id?: string | undefined;
+  focal_x?: number | undefined;
+  focal_y?: number | undefined;
+}
+
+export interface ActualizarFocalImagenDTO {
+  id_servicio: number;
+  public_id: string;
+  focal_x: number;
+  focal_y: number;
 }
 
 export interface SubirFotoCoordinadorDTO {

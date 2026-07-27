@@ -1,14 +1,24 @@
+import { normalizeFocal, parseFotosFocalMap, publicIdFromImageUrl, resolveFocalForUrl, } from "./fotos-focal.js";
 /**
- * Servicio público alineado al front: `fotos[]`, `desc` (texto card).
+ * Servicio público alineado al front: `fotos[]`, `desc` (texto card), focals.
  */
 export function normalizeServicioPublic(raw) {
     const urls = Array.isArray(raw.urls_fotos) ? raw.urls_fotos : [];
     const fotos = [raw.url_foto, ...urls].filter((x) => Boolean(x && String(x).trim()));
     const desc = (raw.desc_resumen || raw.descripcion_completa || "").trim();
+    const fotoFocal = normalizeFocal({
+        x: raw.foto_focal_x ?? 0.5,
+        y: raw.foto_focal_y ?? 0.5,
+    });
+    const focals = fotos.map((url, index) => resolveFocalForUrl(url, raw.foto_focal_x, raw.foto_focal_y, raw.fotos_focal, index === 0));
+    // Keep DB map out of the public payload; expose parallel array instead.
+    const { fotos_focal: _dbMap, ...rest } = raw;
     return {
-        ...raw,
+        ...rest,
         fotos,
         desc: desc || "",
+        foto_focal: focals[0] ?? fotoFocal,
+        fotos_focal: focals,
     };
 }
 /**
@@ -39,4 +49,6 @@ export function buildSalidaPar(servicioRaw, expedicionRaw) {
     const expedicion = normalizeExpedicionPublic(expedicionRaw);
     return { servicio, expedicion };
 }
+/** Re-export helpers used by admin when promoting principal. */
+export { parseFotosFocalMap, publicIdFromImageUrl, resolveFocalForUrl };
 //# sourceMappingURL=public-serializers.js.map

@@ -110,6 +110,11 @@ model servicios {
   activo             Boolean @default(true)
   url_foto           String?
   urls_fotos         String[]
+  /// Punto focal de la foto principal (0–1). Usado con object-position en el front.
+  foto_focal_x       Float    @default(0.5)
+  foto_focal_y       Float    @default(0.5)
+  /// Mapa public_id → { x, y } para focals de galería (principal + secundarias).
+  fotos_focal        Json     @default("{}")
   fecha_creacion     DateTime @default(now())
   fecha_actualizacion DateTime @updatedAt
 

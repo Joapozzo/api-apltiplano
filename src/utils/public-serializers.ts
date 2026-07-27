@@ -1,4 +1,11 @@
 import type { Prisma } from "@prisma/client";
+import {
+  normalizeFocal,
+  parseFotosFocalMap,
+  publicIdFromImageUrl,
+  resolveFocalForUrl,
+  type FocalPoint,
+} from "./fotos-focal.js";
 
 /** Precios como espera el front (`precios`, no `expedicion_precios`). */
 export type PublicPrecioItem = {
@@ -8,7 +15,7 @@ export type PublicPrecioItem = {
 };
 
 /**
- * Servicio público alineado al front: `fotos[]`, `desc` (texto card).
+ * Servicio público alineado al front: `fotos[]`, `desc` (texto card), focals.
  */
 export function normalizeServicioPublic<
   T extends {
@@ -16,16 +23,38 @@ export function normalizeServicioPublic<
     urls_fotos?: string[];
     desc_resumen?: string | null;
     descripcion_completa?: string | null;
+    foto_focal_x?: number | null;
+    foto_focal_y?: number | null;
+    fotos_focal?: unknown;
   },
->(raw: T): T & { fotos: string[]; desc: string } {
+>(raw: T): Omit<T, "fotos_focal"> & {
+  fotos: string[];
+  desc: string;
+  foto_focal: FocalPoint;
+  fotos_focal: FocalPoint[];
+} {
   const urls = Array.isArray(raw.urls_fotos) ? raw.urls_fotos : [];
   const fotos = [raw.url_foto, ...urls].filter((x): x is string => Boolean(x && String(x).trim()));
   const desc = (raw.desc_resumen || raw.descripcion_completa || "").trim();
 
+  const fotoFocal = normalizeFocal({
+    x: raw.foto_focal_x ?? 0.5,
+    y: raw.foto_focal_y ?? 0.5,
+  });
+
+  const focals = fotos.map((url, index) =>
+    resolveFocalForUrl(url, raw.foto_focal_x, raw.foto_focal_y, raw.fotos_focal, index === 0),
+  );
+
+  // Keep DB map out of the public payload; expose parallel array instead.
+  const { fotos_focal: _dbMap, ...rest } = raw as T & { fotos_focal?: unknown };
+
   return {
-    ...raw,
+    ...rest,
     fotos,
     desc: desc || "",
+    foto_focal: focals[0] ?? fotoFocal,
+    fotos_focal: focals,
   };
 }
 
@@ -73,3 +102,6 @@ export function buildSalidaPar(
   const expedicion = normalizeExpedicionPublic(expedicionRaw);
   return { servicio, expedicion };
 }
+
+/** Re-export helpers used by admin when promoting principal. */
+export { parseFotosFocalMap, publicIdFromImageUrl, resolveFocalForUrl };

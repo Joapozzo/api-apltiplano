@@ -17,6 +17,10 @@ router.post(
   uploadMiddleware,
   UploadController.subirImagen,
 );
+router.patch(
+  "/admin/servicios/:id_servicio/imagenes/focal",
+  UploadController.actualizarFocal,
+);
 router.delete("/admin/servicios/:id_servicio/imagenes", deleteRateLimitMiddleware, UploadController.eliminarImagen);
 router.get("/admin/servicios/:id_servicio/imagenes", UploadController.getImagenesServicio);
 

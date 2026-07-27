@@ -9,6 +9,7 @@ const router = Router();
 router.use("/admin/servicios/:id_servicio/imagenes", authenticate, authorize(APP_ROLES.ADMIN));
 router.use("/admin/coordinadores/:id_coordinador/foto", authenticate, authorize(APP_ROLES.ADMIN));
 router.post("/admin/servicios/:id_servicio/imagenes", rateLimitMiddleware, uploadMiddleware, UploadController.subirImagen);
+router.patch("/admin/servicios/:id_servicio/imagenes/focal", UploadController.actualizarFocal);
 router.delete("/admin/servicios/:id_servicio/imagenes", deleteRateLimitMiddleware, UploadController.eliminarImagen);
 router.get("/admin/servicios/:id_servicio/imagenes", UploadController.getImagenesServicio);
 router.post("/admin/coordinadores/:id_coordinador/foto", rateLimitMiddleware, uploadAvatarMiddleware, UploadController.subirFotoCoordinador);

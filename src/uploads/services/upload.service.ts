@@ -1,8 +1,20 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../database/prisma.js";
 import { AppError } from "../../utils/app-error.js";
+import {
+  normalizeFocal,
+  parseFotosFocalMap,
+  publicIdFromImageUrl,
+  removeFotosFocalEntry,
+  setFotosFocalEntry,
+} from "../../utils/fotos-focal.js";
+import type {
+  ActualizarFocalImagenDTO,
+  EliminarFotoCoordinadorOptions,
+  SubirFotoCoordinadorDTO,
+  SubirImagenDTO,
+} from "../types/upload.types.js";
 import { storageAdapter } from "../adapters/index.js";
-import type { EliminarFotoCoordinadorOptions, SubirFotoCoordinadorDTO, SubirImagenDTO } from "../types/upload.types.js";
 import {
   coordinadorFotoCarpeta,
   coordinadorFotoPublicId,
@@ -33,6 +45,7 @@ export class UploadService {
         id_servicio: true,
         url_foto: true,
         urls_fotos: true,
+        fotos_focal: true,
       },
     });
 
@@ -57,6 +70,14 @@ export class UploadService {
     const nextUrlFoto =
       !servicio.url_foto || matchesPublicId(servicio.url_foto, publicId) ? result.url : servicio.url_foto;
 
+    const focal =
+      dto.focal_x != null && dto.focal_y != null
+        ? normalizeFocal({ x: dto.focal_x, y: dto.focal_y })
+        : { x: 0.5, y: 0.5 };
+
+    const fotosFocal = setFotosFocalEntry(servicio.fotos_focal, result.public_id, focal);
+    const isPrincipal = Boolean(nextUrlFoto && matchesPublicId(nextUrlFoto, result.public_id));
+
     await prisma.servicios.update({
       where: {
         id_servicio: dto.id_servicio,
@@ -64,10 +85,64 @@ export class UploadService {
       data: {
         url_foto: dedupedUrls.length > 0 ? nextUrlFoto : null,
         urls_fotos: dedupedUrls,
+        fotos_focal: fotosFocal,
+        ...(isPrincipal
+          ? {
+              foto_focal_x: focal.x,
+              foto_focal_y: focal.y,
+            }
+          : {}),
       },
     });
 
-    return result;
+    return {
+      ...result,
+      focal_x: focal.x,
+      focal_y: focal.y,
+    };
+  }
+
+  static async actualizarFocal(dto: ActualizarFocalImagenDTO) {
+    const servicio = await prisma.servicios.findUnique({
+      where: { id_servicio: dto.id_servicio },
+      select: {
+        id_servicio: true,
+        url_foto: true,
+        urls_fotos: true,
+        fotos_focal: true,
+      },
+    });
+
+    if (!servicio) {
+      throw new AppError("Servicio no encontrado", 404);
+    }
+
+    const belongs =
+      (servicio.url_foto && matchesPublicId(servicio.url_foto, dto.public_id)) ||
+      servicio.urls_fotos.some((url) => matchesPublicId(url, dto.public_id));
+
+    if (!belongs) {
+      throw new AppError("La imagen no pertenece a este servicio", 404);
+    }
+
+    const focal = normalizeFocal({ x: dto.focal_x, y: dto.focal_y });
+    const fotosFocal = setFotosFocalEntry(servicio.fotos_focal, dto.public_id, focal);
+    const isPrincipal = Boolean(servicio.url_foto && matchesPublicId(servicio.url_foto, dto.public_id));
+
+    await prisma.servicios.update({
+      where: { id_servicio: dto.id_servicio },
+      data: {
+        fotos_focal: fotosFocal,
+        ...(isPrincipal
+          ? {
+              foto_focal_x: focal.x,
+              foto_focal_y: focal.y,
+            }
+          : {}),
+      },
+    });
+
+    return { public_id: dto.public_id, focal_x: focal.x, focal_y: focal.y };
   }
 
   static async eliminarImagen(public_id: string, id_servicio: number) {
@@ -79,6 +154,7 @@ export class UploadService {
         id_servicio: true,
         url_foto: true,
         urls_fotos: true,
+        fotos_focal: true,
       },
     });
 
@@ -91,6 +167,18 @@ export class UploadService {
     const remainingUrls = servicio.urls_fotos.filter((url) => !matchesPublicId(url, public_id));
     const wasPrimaryDeleted = servicio.url_foto ? matchesPublicId(servicio.url_foto, public_id) : false;
     const nextPrimary = wasPrimaryDeleted ? (remainingUrls[0] ?? null) : servicio.url_foto;
+    const fotosFocal = removeFotosFocalEntry(servicio.fotos_focal, public_id);
+
+    let nextFocalX = 0.5;
+    let nextFocalY = 0.5;
+    if (nextPrimary) {
+      const nextPublicId = publicIdFromImageUrl(nextPrimary);
+      const map = parseFotosFocalMap(fotosFocal);
+      if (nextPublicId && map[nextPublicId]) {
+        nextFocalX = map[nextPublicId].x;
+        nextFocalY = map[nextPublicId].y;
+      }
+    }
 
     await prisma.servicios.update({
       where: {
@@ -99,6 +187,9 @@ export class UploadService {
       data: {
         url_foto: remainingUrls.length > 0 ? nextPrimary : null,
         urls_fotos: remainingUrls,
+        fotos_focal: fotosFocal,
+        foto_focal_x: remainingUrls.length > 0 ? nextFocalX : 0.5,
+        foto_focal_y: remainingUrls.length > 0 ? nextFocalY : 0.5,
       },
     });
   }
@@ -179,6 +270,9 @@ export class UploadService {
       data: {
         url_foto: null,
         urls_fotos: [],
+        fotos_focal: {},
+        foto_focal_x: 0.5,
+        foto_focal_y: 0.5,
       },
     });
   }
