@@ -1,4 +1,13 @@
-/** Filtro por nombre/resumen y por franjas de altura (como el mock del front). */
+/** Legacy msnm slugs → id_dificultad (seed: Inicial=4, Moderada=1, Media-alta=2, Exigente=3). */
+const LEGACY_DIFICULTAD_TO_ID = {
+    inicial: 4,
+    medio: 1,
+    avanzado: 3,
+};
+/**
+ * Filtro público: búsqueda + dificultad por id_dificultad (fuente de verdad = catálogo dificultades).
+ * Acepta: "todas" | id numérico | slug legacy (inicial|medio|avanzado).
+ */
 export function buildServicioPublicWhere(q, dificultad = "todas") {
     const where = {};
     if (q) {
@@ -9,14 +18,15 @@ export function buildServicioPublicWhere(q, dificultad = "todas") {
         ];
     }
     if (dificultad && dificultad !== "todas") {
-        if (dificultad === "inicial") {
-            where.altura_maxima = { lte: 4500 };
+        const asNum = Number.parseInt(String(dificultad), 10);
+        if (Number.isFinite(asNum) && asNum > 0) {
+            where.id_dificultad = asNum;
         }
-        else if (dificultad === "medio") {
-            where.altura_maxima = { gt: 4500, lte: 5500 };
-        }
-        else if (dificultad === "avanzado") {
-            where.altura_maxima = { gt: 6000 };
+        else {
+            const legacyId = LEGACY_DIFICULTAD_TO_ID[String(dificultad).toLowerCase()];
+            if (legacyId) {
+                where.id_dificultad = legacyId;
+            }
         }
     }
     return where;

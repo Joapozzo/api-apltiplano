@@ -25,5 +25,9 @@ export const createDificultadSchema = z.object({
     nivel: z.string().trim().min(1, "El nivel es obligatorio"),
     descripcion: z.string().trim().optional().nullable(),
     orden: z.coerce.number().int().min(0).optional(),
+    puntaje_min: z.coerce.number().int().min(0).optional(),
+    puntaje_max: z.coerce.number().int().min(0).optional(),
+    /** Si true, redistribuye rangos equidistantes entre todas las dificultades activas. */
+    recalcular_rangos: z.boolean().optional(),
 });
 //# sourceMappingURL=catalogos.dto.js.map

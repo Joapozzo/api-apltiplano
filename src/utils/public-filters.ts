@@ -1,7 +1,17 @@
 import type { Prisma } from "@prisma/client";
 import type { PublicCatalogQuery } from "../types/public-salidas.dto.js";
 
-/** Filtro por nombre/resumen y por franjas de altura (como el mock del front). */
+/** Legacy msnm slugs → id_dificultad (seed: Inicial=4, Moderada=1, Media-alta=2, Exigente=3). */
+const LEGACY_DIFICULTAD_TO_ID: Record<string, number> = {
+  inicial: 4,
+  medio: 1,
+  avanzado: 3,
+};
+
+/**
+ * Filtro público: búsqueda + dificultad por id_dificultad (fuente de verdad = catálogo dificultades).
+ * Acepta: "todas" | id numérico | slug legacy (inicial|medio|avanzado).
+ */
 export function buildServicioPublicWhere(
   q?: string,
   dificultad: PublicCatalogQuery["dificultad"] = "todas",
@@ -17,12 +27,14 @@ export function buildServicioPublicWhere(
   }
 
   if (dificultad && dificultad !== "todas") {
-    if (dificultad === "inicial") {
-      where.altura_maxima = { lte: 4500 };
-    } else if (dificultad === "medio") {
-      where.altura_maxima = { gt: 4500, lte: 5500 };
-    } else if (dificultad === "avanzado") {
-      where.altura_maxima = { gt: 6000 };
+    const asNum = Number.parseInt(String(dificultad), 10);
+    if (Number.isFinite(asNum) && asNum > 0) {
+      where.id_dificultad = asNum;
+    } else {
+      const legacyId = LEGACY_DIFICULTAD_TO_ID[String(dificultad).toLowerCase()];
+      if (legacyId) {
+        where.id_dificultad = legacyId;
+      }
     }
   }
 

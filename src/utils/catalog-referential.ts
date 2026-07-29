@@ -12,7 +12,7 @@ export class CatalogosServiceError extends Error {
   }
 }
 
-const PROTECTED_DIFICULTAD_IDS = [1, 2, 3];
+const PROTECTED_DIFICULTAD_IDS = [1, 2, 3, 4];
 
 export async function assertUbicacionDeletable(id: number): Promise<void> {
   const count = await prisma.lugares.count({
@@ -59,7 +59,7 @@ export async function assertActividadDeletable(id: number): Promise<void> {
 export async function assertDificultadDeletable(id: number): Promise<void> {
   if (PROTECTED_DIFICULTAD_IDS.includes(id)) {
     throw new CatalogosServiceError(
-      "No se puede eliminar la dificultad porque es del sistema (ids 1-3)",
+      "No se puede eliminar la dificultad porque es del sistema (ids 1-4)",
       403,
       "CATALOG_PROTECTED",
     );

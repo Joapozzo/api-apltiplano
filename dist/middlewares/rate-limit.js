@@ -47,4 +47,17 @@ export const inscriptionLimiter = rateLimit({
         };
     },
 });
+export const nivelLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: (_req, _res) => {
+        logger.warn({ message: "Nivel questionnaire rate limit exceeded" }, "Nivel rate limit blocked");
+        return {
+            success: false,
+            error: "Demasiados envíos. Intenta de nuevo en 1 minuto.",
+        };
+    },
+});
 //# sourceMappingURL=rate-limit.js.map

@@ -53,8 +53,76 @@ model dificultades {
   descripcion   String?
   activo        Boolean @default(true)
   orden         Int     @default(0)
+  puntaje_min   Int     @default(0)
+  puntaje_max   Int     @default(0)
 
-  servicios servicios[]
+  servicios           servicios[]
+  evaluaciones_nivel  evaluaciones_nivel[]
+}
+
+model cuestionarios_nivel {
+  id_cuestionario Int      @id @default(autoincrement())
+  codigo          String   @unique
+  version         Int      @default(1)
+  activo          Boolean  @default(true)
+  titulo          String
+  descripcion     String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  preguntas    preguntas_nivel[]
+  evaluaciones evaluaciones_nivel[]
+}
+
+model preguntas_nivel {
+  id_pregunta     Int     @id @default(autoincrement())
+  id_cuestionario Int
+  codigo          String
+  enunciado       String
+  orden           Int     @default(0)
+  grupo           String?
+  obligatoria     Boolean @default(true)
+  activa          Boolean @default(true)
+
+  cuestionario cuestionarios_nivel @relation(fields: [id_cuestionario], references: [id_cuestionario], onDelete: Cascade)
+  opciones     opciones_nivel[]
+
+  @@unique([id_cuestionario, codigo])
+  @@index([id_cuestionario, orden])
+}
+
+model opciones_nivel {
+  id_opcion   Int     @id @default(autoincrement())
+  id_pregunta Int
+  codigo      String
+  texto       String
+  puntos      Int     @default(0)
+  orden       Int     @default(0)
+  activa      Boolean @default(true)
+
+  pregunta preguntas_nivel @relation(fields: [id_pregunta], references: [id_pregunta], onDelete: Cascade)
+
+  @@unique([id_pregunta, codigo])
+  @@index([id_pregunta, orden])
+}
+
+model evaluaciones_nivel {
+  id_evaluacion   Int      @id @default(autoincrement())
+  id_cuestionario Int
+  version         Int
+  nombre          String
+  email           String
+  puntaje_total   Int
+  id_dificultad   Int
+  respuestas      Json
+  created_at      DateTime @default(now())
+
+  cuestionario cuestionarios_nivel @relation(fields: [id_cuestionario], references: [id_cuestionario])
+  dificultad   dificultades        @relation(fields: [id_dificultad], references: [id_dificultad])
+
+  @@index([email])
+  @@index([created_at])
+  @@index([id_dificultad])
 }
 
 model items_servicio {

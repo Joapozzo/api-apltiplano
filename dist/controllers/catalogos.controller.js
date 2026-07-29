@@ -182,6 +182,9 @@ export class CatalogosController {
             nivel: payload.nivel,
             ...(payload.descripcion !== undefined ? { descripcion: payload.descripcion } : {}),
             ...(payload.orden !== undefined ? { orden: payload.orden } : {}),
+            ...(payload.puntaje_min !== undefined ? { puntaje_min: payload.puntaje_min } : {}),
+            ...(payload.puntaje_max !== undefined ? { puntaje_max: payload.puntaje_max } : {}),
+            ...(payload.recalcular_rangos !== undefined ? { recalcular_rangos: payload.recalcular_rangos } : {}),
         });
         res.status(201).json(result);
     });
@@ -197,6 +200,10 @@ export class CatalogosController {
             updateData.orden = data.orden;
         if (typeof data.activo === "boolean")
             updateData.activo = data.activo;
+        if (typeof data.puntaje_min === "number")
+            updateData.puntaje_min = data.puntaje_min;
+        if (typeof data.puntaje_max === "number")
+            updateData.puntaje_max = data.puntaje_max;
         const result = await updateDificultad(id, updateData);
         res.json(result);
     });

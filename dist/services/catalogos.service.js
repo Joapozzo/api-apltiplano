@@ -311,9 +311,19 @@ export async function createDificultad(data) {
                 nivel: data.nivel.trim(),
                 descripcion: data.descripcion?.trim() || null,
                 orden: data.orden ?? 0,
+                puntaje_min: data.puntaje_min ?? 0,
+                puntaje_max: data.puntaje_max ?? 0,
                 activo: true,
             },
         });
+        if (data.recalcular_rangos !== false && data.puntaje_min === undefined && data.puntaje_max === undefined) {
+            const { recalcularRangosDificultades } = await import("./nivel/nivel-cuestionario.service.js");
+            await recalcularRangosDificultades();
+            const refreshed = await prisma.dificultades.findUnique({
+                where: { id_dificultad: created.id_dificultad },
+            });
+            return { success: true, data: refreshed ?? created };
+        }
         return { success: true, data: created };
     }
     catch (error) {
@@ -330,6 +340,10 @@ export async function updateDificultad(id, data) {
         updateData.orden = data.orden;
     if (data.activo !== undefined)
         updateData.activo = data.activo;
+    if (data.puntaje_min !== undefined)
+        updateData.puntaje_min = data.puntaje_min;
+    if (data.puntaje_max !== undefined)
+        updateData.puntaje_max = data.puntaje_max;
     const updated = await prisma.dificultades.update({
         where: { id_dificultad: id },
         data: updateData,

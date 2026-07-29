@@ -8,7 +8,7 @@ import { csrfProtection } from "./middlewares/csrf.js";
 import { auditMiddleware } from "./middlewares/audit.js";
 import { requestLogger } from "./middlewares/request-logger.js";
 import { globalErrorHandler } from "./middlewares/error-handler.js";
-import { apiLimiter, inscriptionLimiter } from "./middlewares/rate-limit.js";
+import { apiLimiter, inscriptionLimiter, nivelLimiter } from "./middlewares/rate-limit.js";
 import { prisma } from "./database/prisma.js";
 import inscripcionesRoutes from "./routes/inscripciones.routes.js";
 import expedicionesRoutes from "./routes/expediciones.routes.js";
@@ -26,6 +26,8 @@ import configRoutes from "./routes/config.routes.js";
 import publicConfigRoutes from "./routes/public-config.routes.js";
 import notificacionesRoutes from "./routes/notificaciones.routes.js";
 import notasCalendarioRoutes from "./routes/notas-calendario.routes.js";
+import nivelRoutes from "./routes/nivel.routes.js";
+import adminNivelRoutes from "./routes/admin-nivel.routes.js";
 import { APP_ROLES } from "./types/auth.types.js";
 
 const app = express();
@@ -114,6 +116,7 @@ app.use("/api/auth", authRoutes);
 
 // Inscription routes with inscription-specific rate limiting
 app.use("/api/inscripciones", inscriptionLimiter, csrfMiddleware, inscripcionesRoutes);
+app.use("/api/public/nivel", nivelLimiter, csrfMiddleware, nivelRoutes);
 
 // Admin-only routes with CSRF protection
 app.use("/api/expediciones", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), expedicionesRoutes);
@@ -125,6 +128,7 @@ app.use("/api/coordinadores", csrfMiddleware, authenticate, authorize(APP_ROLES.
 app.use("/api/user", userRoutes);
 app.use("/api", csrfMiddleware, uploadRoutes);
 app.use("/api/admin/search", authenticate, authorize(APP_ROLES.ADMIN), adminSearchRoutes);
+app.use("/api/admin/nivel", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), adminNivelRoutes);
 app.use("/api/config", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), configRoutes);
 app.use("/api/public/config", publicConfigRoutes);
 app.use("/api/admin/notificaciones", csrfMiddleware, authenticate, authorize(APP_ROLES.ADMIN), notificacionesRoutes);

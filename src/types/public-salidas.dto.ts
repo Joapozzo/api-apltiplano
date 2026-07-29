@@ -13,7 +13,12 @@ export const publicCatalogQuerySchema = z.object({
     .max(200)
     .optional()
     .transform((v) => v?.trim() || undefined),
-  dificultad: z.enum(["todas", "inicial", "medio", "avanzado"]).optional().default("todas"),
+  dificultad: z
+    .string()
+    .trim()
+    .optional()
+    .default("todas")
+    .transform((v) => (v && v.length > 0 ? v : "todas")),
   orden: z.enum(["fecha", "dificultad", "precio", "nombre"]).optional().default("fecha"),
 });
 

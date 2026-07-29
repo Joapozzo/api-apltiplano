@@ -368,16 +368,35 @@ export async function getDificultadById(id: number) {
   return { success: true, data: dificultad } as ApiSuccessResponse<typeof dificultad>;
 }
 
-export async function createDificultad(data: { nivel: string; descripcion?: string | null; orden?: number }) {
+export async function createDificultad(data: {
+  nivel: string;
+  descripcion?: string | null;
+  orden?: number;
+  puntaje_min?: number;
+  puntaje_max?: number;
+  recalcular_rangos?: boolean;
+}) {
   try {
     const created = await prisma.dificultades.create({
       data: {
         nivel: data.nivel.trim(),
         descripcion: data.descripcion?.trim() || null,
         orden: data.orden ?? 0,
+        puntaje_min: data.puntaje_min ?? 0,
+        puntaje_max: data.puntaje_max ?? 0,
         activo: true,
       },
     });
+
+    if (data.recalcular_rangos !== false && data.puntaje_min === undefined && data.puntaje_max === undefined) {
+      const { recalcularRangosDificultades } = await import("./nivel/nivel-cuestionario.service.js");
+      await recalcularRangosDificultades();
+      const refreshed = await prisma.dificultades.findUnique({
+        where: { id_dificultad: created.id_dificultad },
+      });
+      return { success: true, data: refreshed ?? created } as ApiSuccessResponse<typeof created>;
+    }
+
     return { success: true, data: created } as ApiSuccessResponse<typeof created>;
   } catch (error) {
     mapCatalogosWriteError(error, "dificultad");
@@ -391,6 +410,8 @@ export async function updateDificultad(
     descripcion: string | null;
     orden: number;
     activo: boolean;
+    puntaje_min: number;
+    puntaje_max: number;
   }>,
 ) {
   const updateData: Record<string, unknown> = {};
@@ -398,6 +419,8 @@ export async function updateDificultad(
   if (data.descripcion !== undefined) updateData.descripcion = data.descripcion?.trim() || null;
   if (data.orden !== undefined) updateData.orden = data.orden;
   if (data.activo !== undefined) updateData.activo = data.activo;
+  if (data.puntaje_min !== undefined) updateData.puntaje_min = data.puntaje_min;
+  if (data.puntaje_max !== undefined) updateData.puntaje_max = data.puntaje_max;
 
   const updated = await prisma.dificultades.update({
     where: { id_dificultad: id },

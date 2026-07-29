@@ -9,6 +9,7 @@ import {
   normalizeItinerariosPayload,
   syncItinerariosForServicio,
 } from "../utils/itinerario-payload.js";
+import { MAX_DESTACADOS } from "../constants/destacados.js";
 
 export interface ServicioFilters {
   activo?: boolean;
@@ -19,6 +20,22 @@ export interface ServicioFilters {
   search?: string;
   page?: number;
   limit?: number;
+}
+
+async function assertPuedeMarcarDestacado(excludeId?: number) {
+  const count = await prisma.servicios.count({
+    where: {
+      destacado: true,
+      ...(excludeId != null ? { id_servicio: { not: excludeId } } : {}),
+    },
+  });
+
+  if (count >= MAX_DESTACADOS) {
+    throw new AppError(
+      `Ya hay ${MAX_DESTACADOS} servicios destacados. Desmarcá otro antes de agregar uno nuevo.`,
+      400,
+    );
+  }
 }
 
 export class ServiciosService {
@@ -163,6 +180,10 @@ export class ServiciosService {
       assertCatalogoActivo("dificultades", data.id_dificultad),
     ]);
 
+    if (data.destacado) {
+      await assertPuedeMarcarDestacado();
+    }
+
     const itinerariosPayload = normalizeItinerariosPayload(data.itinerarios);
 
     const servicio = await prisma.servicios.create({
@@ -255,11 +276,15 @@ export class ServiciosService {
   static async update(id: number, data: any) {
     const existing = await prisma.servicios.findUnique({
       where: { id_servicio: id },
-      select: { activo: true },
+      select: { activo: true, destacado: true },
     });
 
     if (!existing) {
-      throw new Error("Servicio no encontrado");
+      throw new AppError("Servicio no encontrado", 404);
+    }
+
+    if (data.destacado === true && !existing.destacado) {
+      await assertPuedeMarcarDestacado(id);
     }
 
     const itinerariosPayload = normalizeItinerariosPayload(data.itinerarios);
@@ -482,12 +507,17 @@ export class ServiciosService {
     });
 
     if (!servicio) {
-      throw new Error("Servicio no encontrado");
+      throw new AppError("Servicio no encontrado", 404);
+    }
+
+    const nextDestacado = !servicio.destacado;
+    if (nextDestacado) {
+      await assertPuedeMarcarDestacado(id);
     }
 
     const updated = await prisma.servicios.update({
       where: { id_servicio: id },
-      data: { destacado: !servicio.destacado },
+      data: { destacado: nextDestacado },
     });
 
     return {

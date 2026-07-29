@@ -29,6 +29,10 @@ export const createDificultadSchema = z.object({
   nivel: z.string().trim().min(1, "El nivel es obligatorio"),
   descripcion: z.string().trim().optional().nullable(),
   orden: z.coerce.number().int().min(0).optional(),
+  puntaje_min: z.coerce.number().int().min(0).optional(),
+  puntaje_max: z.coerce.number().int().min(0).optional(),
+  /** Si true, redistribuye rangos equidistantes entre todas las dificultades activas. */
+  recalcular_rangos: z.boolean().optional(),
 });
 
 export type CreateUbicacionBody = {
@@ -57,6 +61,9 @@ export type CreateDificultadBody = {
   nivel: string;
   descripcion?: string | null;
   orden?: number;
+  puntaje_min?: number;
+  puntaje_max?: number;
+  recalcular_rangos?: boolean;
 };
 
 export type UpdateUbicacionBody = Partial<CreateUbicacionBody> & { activo?: boolean };
