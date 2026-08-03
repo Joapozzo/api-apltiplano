@@ -23,7 +23,9 @@ export const CUESTIONARIO_NIVEL_META = {
     "Este cuestionario nos ayuda a comprender tu experiencia previa, tu relación con la montaña y el tipo de expedición más adecuada para vos hoy.",
 };
 
-/** Max score per question when picking strongest option = 5 → 16×5 = 80. Ranges align to seed dificultades. */
+/** Max score per question when picking strongest option = 5 → 16×5 = 80.
+ * Umbrales de dificultad (Inicial/Intermedio/Avanzado) son configurables en admin;
+ * seed inicial: 0–40 / 41–70 / 71–94 (tope nominal 94). */
 export const PREGUNTAS_NIVEL_SEED: PreguntaSeed[] = [
   {
     codigo: "q01_actividad_fisica",

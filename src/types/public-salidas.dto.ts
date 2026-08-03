@@ -19,6 +19,20 @@ export const publicCatalogQuerySchema = z.object({
     .optional()
     .default("todas")
     .transform((v) => (v && v.length > 0 ? v : "todas")),
+  /** Exigencia física: "todas" | Moderada | Alta | Muy alta */
+  exigencia_fisica: z
+    .string()
+    .trim()
+    .optional()
+    .default("todas")
+    .transform((v) => (v && v.length > 0 ? v : "todas")),
+  /** Dificultad técnica: "todas" | Nula | Básica | Intermedia | Avanzada */
+  dificultad_tecnica: z
+    .string()
+    .trim()
+    .optional()
+    .default("todas")
+    .transform((v) => (v && v.length > 0 ? v : "todas")),
   orden: z.enum(["fecha", "dificultad", "precio", "nombre"]).optional().default("fecha"),
 });
 

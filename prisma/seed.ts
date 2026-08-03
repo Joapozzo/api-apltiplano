@@ -116,32 +116,36 @@ async function main() {
       nivel: "Inicial",
       orden: 0,
       puntaje_min: 0,
-      puntaje_max: 24,
+      puntaje_max: 40,
       descripcion: "Ideal para quienes se inician en la montaña o tienen poca experiencia en altura.",
+      activo: true,
     },
     {
       id: 1,
-      nivel: "Moderada",
+      nivel: "Intermedio",
       orden: 1,
-      puntaje_min: 25,
-      puntaje_max: 49,
-      descripcion: "Requiere buena condición física y algo de experiencia en trekking.",
+      puntaje_min: 41,
+      puntaje_max: 70,
+      descripcion: "Requiere buena condición física y experiencia previa en trekking / altura.",
+      activo: true,
     },
     {
       id: 2,
-      nivel: "Media-alta",
+      nivel: "Avanzado",
       orden: 2,
-      puntaje_min: 50,
-      puntaje_max: 74,
-      descripcion: "Exige experiencia en altura, autonomía y jornadas exigentes.",
+      puntaje_min: 71,
+      puntaje_max: 94,
+      descripcion: "Para montañistas con trayectoria sólida en altura y carga.",
+      activo: true,
     },
     {
       id: 3,
-      nivel: "Exigente",
-      orden: 3,
-      puntaje_min: 75,
-      puntaje_max: 999,
-      descripcion: "Para montañistas con trayectoria sólida en altura y carga.",
+      nivel: "Exigente (legacy)",
+      orden: 99,
+      puntaje_min: 0,
+      puntaje_max: 0,
+      descripcion: "Nivel legacy unificado en Avanzado. No usar.",
+      activo: false,
     },
   ] as const;
 
@@ -155,7 +159,7 @@ async function main() {
         puntaje_min: d.puntaje_min,
         puntaje_max: d.puntaje_max,
         descripcion: d.descripcion,
-        activo: true,
+        activo: d.activo,
       },
       update: {
         nivel: d.nivel,
@@ -163,11 +167,11 @@ async function main() {
         puntaje_min: d.puntaje_min,
         puntaje_max: d.puntaje_max,
         descripcion: d.descripcion,
-        activo: true,
+        activo: d.activo,
       },
     });
   }
-  console.log("Dificultades: Inicial, Moderada, Media-alta, Exigente (ids 4,1,2,3).");
+  console.log("Dificultades: Inicial (0–40), Intermedio (41–70), Avanzado (71–94); Exigente legacy inactivo.");
 
   await seedCuestionarioNivel();
 
@@ -188,6 +192,84 @@ async function main() {
     { clave: "notificaciones.dias_salida_proxima", valor: "7", tipo: "number", grupo: "notificaciones", etiqueta: "Días para notificación de salida próxima", editable: true },
     { clave: "notificaciones.dias_salida_urgente", valor: "3", tipo: "number", grupo: "notificaciones", etiqueta: "Días para notificación de salida urgente", editable: true },
     { clave: "notificaciones.dias_retencion", valor: "90", tipo: "number", grupo: "notificaciones", etiqueta: "Días de retención de notificaciones", editable: true },
+    {
+      clave: "contenido.tips",
+      valor: JSON.stringify({
+        enabled: true,
+        tips: [
+          {
+            id: 1,
+            icon: "Calendar",
+            categoria: "Planificación",
+            titulo: "Días Extra = Tranquilidad",
+            contenido:
+              "Disponé de 2 días extras. El clima en montaña es cambiante y más tiempo te permitirá modificar el plan.",
+            color: "from-blue-500 to-blue-600",
+            activo: true,
+            orden: 1,
+          },
+          {
+            id: 2,
+            icon: "MapPin",
+            categoria: "Investigación",
+            titulo: "Conocé tu Destino",
+            contenido:
+              "Investigá el lugar para combinar el viaje con otras experiencias y conocer costumbres locales.",
+            color: "from-green-500 to-green-600",
+            activo: true,
+            orden: 2,
+          },
+          {
+            id: 3,
+            icon: "Thermometer",
+            categoria: "Equipamiento",
+            titulo: "Preparate para el Clima",
+            contenido:
+              "Invierno: cadenas, mantas térmicas. Verano: agua extra, sombrero y protector solar.",
+            color: "from-orange-500 to-red-500",
+            activo: true,
+            orden: 3,
+          },
+          {
+            id: 4,
+            icon: "Droplets",
+            categoria: "Hidratación",
+            titulo: "Hidratación Constante",
+            contenido:
+              "En altura, tomá agua cada 15-20 min. Evitá alcohol 48hs antes de la expedición.",
+            color: "from-cyan-500 to-blue-500",
+            activo: true,
+            orden: 4,
+          },
+          {
+            id: 5,
+            icon: "Heart",
+            categoria: "Preparación",
+            titulo: "Entrenamiento Previo",
+            contenido:
+              "Comenzá 6 semanas antes. Enfocate en cardio y piernas. Caminatas con mochila son ideales.",
+            color: "from-pink-500 to-rose-500",
+            activo: true,
+            orden: 5,
+          },
+          {
+            id: 6,
+            icon: "FileText",
+            categoria: "Documentación",
+            titulo: "Permisos y Seguros",
+            contenido:
+              "Verificá DNI vigente, contratá un seguro de viaje y consultá permisos especiales.",
+            color: "from-purple-500 to-indigo-500",
+            activo: true,
+            orden: 6,
+          },
+        ],
+      }),
+      tipo: "json",
+      grupo: "contenido",
+      etiqueta: "Tips de experiencia (widget flotante)",
+      editable: true,
+    },
   ];
 
   for (const setting of configSettings) {

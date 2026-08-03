@@ -19,10 +19,10 @@ function parseOrigins(origins) {
 }
 const originSource = process.env.ALLOWED_ORIGINS
     ? "ALLOWED_ORIGINS"
-    : process.env.FRONTEND_URL
-        ? "FRONTEND_URL"
+    : process.env.NEXT_FRONTEND_URL
+        ? "NEXT_FRONTEND_URL"
         : "default";
-const allowedOrigins = parseOrigins(process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL);
+const allowedOrigins = parseOrigins(process.env.ALLOWED_ORIGINS || process.env.NEXT_FRONTEND_URL);
 const corsOptions = {
     origin: (origin, callback) => {
         // Allow requests with no origin (server-to-server, mobile apps, Postman, etc.)

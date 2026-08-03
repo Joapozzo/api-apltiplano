@@ -144,6 +144,10 @@ model servicios {
   id_lugar           Int
   id_actividad       Int
   id_dificultad      Int
+  /// Exigencia física del servicio (UI catálogo): Moderada | Alta | Muy alta
+  exigencia_fisica   String?
+  /// Dificultad técnica (UI catálogo): Nula | Básica | Intermedia | Avanzada
+  dificultad_tecnica String?
   duracion_dias      Int
   duracion_noches    Int
   altura_maxima      Int
@@ -164,6 +168,8 @@ model servicios {
   punto_encuentro    String?
   comodidades        String?
   briefing_info      String?
+  /// Listado de equipo requerido (texto plano, editable en admin).
+  equipo_requerido   String?
   consideraciones_especiales String[]
   modalidad          String?
   cupos_maximos      Int?

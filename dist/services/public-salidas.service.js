@@ -28,6 +28,8 @@ const listaExpedicionSelect = {
             id_lugar: true,
             id_actividad: true,
             id_dificultad: true,
+            exigencia_fisica: true,
+            dificultad_tecnica: true,
             url_foto: true,
             urls_fotos: true,
             foto_focal_x: true,
@@ -48,7 +50,7 @@ const listaExpedicionSelect = {
 };
 function whereExpedicionesPublicas(query) {
     const hoy = startOfTodayLocal();
-    const filtroServicio = buildServicioPublicWhere(query.q, query.dificultad);
+    const filtroServicio = buildServicioPublicWhere(query.q, query.dificultad, query.exigencia_fisica, query.dificultad_tecnica);
     return {
         OR: [{ estado: "A" }, { estado: "Activa" }],
         fecha_salida: { gte: hoy },

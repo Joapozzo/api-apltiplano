@@ -22,11 +22,11 @@ function parseOrigins(origins: string | undefined): string[] {
 
 const originSource = process.env.ALLOWED_ORIGINS
   ? "ALLOWED_ORIGINS"
-  : process.env.FRONTEND_URL
-    ? "FRONTEND_URL"
+  : process.env.NEXT_FRONTEND_URL
+    ? "NEXT_FRONTEND_URL"
     : "default";
 
-const allowedOrigins = parseOrigins(process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL);
+const allowedOrigins = parseOrigins(process.env.ALLOWED_ORIGINS || process.env.NEXT_FRONTEND_URL);
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {

@@ -1,5 +1,6 @@
 import { prisma } from "../database/prisma.js";
 import { JWTService } from "./jwt.service.js";
+import { getPublicFrontendUrl } from "../utils/frontend-url.js";
 import { getInscripcionEstadoInicial, getInscripcionTokenDias } from "../utils/config-runtime.js";
 import { emitInscripcionNueva } from "./notificaciones/notificaciones-emit.service.js";
 import { syncAlertasOperativas } from "./notificaciones/notificaciones-sync.service.js";
@@ -153,7 +154,7 @@ export class InscripcionesService {
       },
     });
 
-    const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const baseUrl = getPublicFrontendUrl();
     const url = `${baseUrl}/inscripcion/${token}`;
 
     return {
@@ -655,7 +656,7 @@ export class InscripcionesService {
       prisma.inscripcion_tokens.count({ where }),
     ]);
 
-    const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const baseUrl = getPublicFrontendUrl();
     const now = new Date();
 
     const data = rows.map((r) => {

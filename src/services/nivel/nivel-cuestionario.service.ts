@@ -155,13 +155,18 @@ async function resolverRespuestas(respuestas: RespuestaIn[]) {
     throw new NivelServiceError("No hay niveles de dificultad configurados", 500, "NO_DIFICULTADES");
   }
 
-  return { cuestionario, seleccionadas, puntaje_total, nivel };
+  const puntaje_maximo = Math.max(
+    94,
+    ...dificultades.map((d) => d.puntaje_max),
+    puntaje_total,
+  );
+
+  return { cuestionario, seleccionadas, puntaje_total, puntaje_maximo, nivel };
 }
 
 export async function evaluarNivel(body: EvaluarNivelBody) {
-  const { cuestionario, seleccionadas, puntaje_total, nivel } = await resolverRespuestas(
-    body.respuestas,
-  );
+  const { cuestionario, seleccionadas, puntaje_total, puntaje_maximo, nivel } =
+    await resolverRespuestas(body.respuestas);
 
   const evaluacion = await prisma.evaluaciones_nivel.create({
     data: {
@@ -184,25 +189,31 @@ export async function evaluarNivel(body: EvaluarNivelBody) {
     data: {
       evaluacion_id: evaluacion.id_evaluacion,
       puntaje_total,
+      puntaje_maximo,
       nivel: {
         id_dificultad: nivel.id_dificultad,
         nivel: nivel.nivel,
         descripcion: nivel.descripcion,
+        puntaje_min: nivel.puntaje_min,
+        puntaje_max: nivel.puntaje_max,
       },
     },
   };
 }
 
 export async function previewNivel(body: PreviewNivelBody) {
-  const { puntaje_total, nivel } = await resolverRespuestas(body.respuestas);
+  const { puntaje_total, puntaje_maximo, nivel } = await resolverRespuestas(body.respuestas);
   return {
     success: true as const,
     data: {
       puntaje_total,
+      puntaje_maximo,
       nivel: {
         id_dificultad: nivel.id_dificultad,
         nivel: nivel.nivel,
         descripcion: nivel.descripcion,
+        puntaje_min: nivel.puntaje_min,
+        puntaje_max: nivel.puntaje_max,
       },
     },
   };

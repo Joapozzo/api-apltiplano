@@ -2,6 +2,15 @@ import { ServiciosService } from "../services/servicios.service.js";
 import { parseParamId } from "../utils/express-helpers.js";
 import { asyncHandler } from "../middlewares/error-handler.js";
 import { AppError } from "../utils/app-error.js";
+import { servicioBodyPartialSchema } from "../types/servicios.dto.js";
+function parseServicioBody(body) {
+    const parsed = servicioBodyPartialSchema.safeParse(body);
+    if (!parsed.success) {
+        const first = parsed.error.issues[0];
+        throw new AppError(first?.message ?? "Datos inválidos", 400);
+    }
+    return parsed.data;
+}
 export class ServiciosController {
     static getAll = asyncHandler(async (req, res) => {
         const filters = {
@@ -29,14 +38,16 @@ export class ServiciosController {
         res.json(result);
     });
     static create = asyncHandler(async (req, res) => {
-        const result = await ServiciosService.create(req.body);
+        const body = parseServicioBody(req.body);
+        const result = await ServiciosService.create(body);
         res.status(201).json(result);
     });
     static update = asyncHandler(async (req, res) => {
         const id = parseParamId(req.params.id);
         if (!id)
             throw new AppError("ID es requerido", 400);
-        const result = await ServiciosService.update(parseInt(id), req.body);
+        const body = parseServicioBody(req.body);
+        const result = await ServiciosService.update(parseInt(id), body);
         res.json(result);
     });
     static delete = asyncHandler(async (req, res) => {

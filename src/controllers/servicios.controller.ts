@@ -3,6 +3,16 @@ import { ServiciosService, type ServicioFilters } from "../services/servicios.se
 import { parseParamId } from "../utils/express-helpers.js";
 import { asyncHandler } from "../middlewares/error-handler.js";
 import { AppError } from "../utils/app-error.js";
+import { servicioBodyPartialSchema } from "../types/servicios.dto.js";
+
+function parseServicioBody(body: unknown) {
+  const parsed = servicioBodyPartialSchema.safeParse(body);
+  if (!parsed.success) {
+    const first = parsed.error.issues[0];
+    throw new AppError(first?.message ?? "Datos inválidos", 400);
+  }
+  return parsed.data;
+}
 
 export class ServiciosController {
   static getAll = asyncHandler(async (req: Request, res: Response) => {
@@ -35,7 +45,8 @@ export class ServiciosController {
   });
 
   static create = asyncHandler(async (req: Request, res: Response) => {
-    const result = await ServiciosService.create(req.body);
+    const body = parseServicioBody(req.body);
+    const result = await ServiciosService.create(body);
     res.status(201).json(result);
   });
 
@@ -43,7 +54,8 @@ export class ServiciosController {
     const id = parseParamId(req.params.id);
     if (!id) throw new AppError("ID es requerido", 400);
 
-    const result = await ServiciosService.update(parseInt(id), req.body);
+    const body = parseServicioBody(req.body);
+    const result = await ServiciosService.update(parseInt(id), body);
     res.json(result);
   });
 

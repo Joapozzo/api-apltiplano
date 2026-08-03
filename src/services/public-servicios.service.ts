@@ -18,7 +18,12 @@ export class PublicServiciosService {
    * Catálogo: todos los servicios activos (con o sin próxima salida), filtros y orden.
    */
   static async listCatalog(query: ServiciosCatalogQuery): Promise<ApiPaginatedResponse<CatalogoServicioPar>> {
-    const filtroExtra = buildServicioPublicWhere(query.q, query.dificultad);
+    const filtroExtra = buildServicioPublicWhere(
+      query.q,
+      query.dificultad,
+      query.exigencia_fisica,
+      query.dificultad_tecnica,
+    );
 
     const where: Prisma.serviciosWhereInput = {
       activo: true,
@@ -33,6 +38,8 @@ export class PublicServiciosService {
       id_lugar: true,
       id_actividad: true,
       id_dificultad: true,
+      exigencia_fisica: true,
+      dificultad_tecnica: true,
       url_foto: true,
       urls_fotos: true,
       foto_focal_x: true,

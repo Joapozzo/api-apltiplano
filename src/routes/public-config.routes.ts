@@ -11,6 +11,7 @@ router.get("/", async (req, res) => {
     const publicConfig: Record<string, Record<string, string>> = {
       contacto: {},
       branding: {},
+      contenido: {},
     };
 
     for (const item of allConfig) {

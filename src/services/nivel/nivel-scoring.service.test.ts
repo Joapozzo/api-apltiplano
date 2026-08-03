@@ -6,11 +6,11 @@ import {
   type DificultadRango,
 } from "./nivel-scoring.service.js";
 
+/** Rangos iniciales del cliente: 0–40 / 41–70 / 71–94 (configurable en admin). */
 const DIFIS: DificultadRango[] = [
-  { id_dificultad: 4, nivel: "Inicial", puntaje_min: 0, puntaje_max: 24, orden: 0 },
-  { id_dificultad: 1, nivel: "Moderada", puntaje_min: 25, puntaje_max: 49, orden: 1 },
-  { id_dificultad: 2, nivel: "Media-alta", puntaje_min: 50, puntaje_max: 74, orden: 2 },
-  { id_dificultad: 3, nivel: "Exigente", puntaje_min: 75, puntaje_max: 999, orden: 3 },
+  { id_dificultad: 4, nivel: "Inicial", puntaje_min: 0, puntaje_max: 40, orden: 0 },
+  { id_dificultad: 1, nivel: "Intermedio", puntaje_min: 41, puntaje_max: 70, orden: 1 },
+  { id_dificultad: 2, nivel: "Avanzado", puntaje_min: 71, puntaje_max: 94, orden: 2 },
 ];
 
 describe("sumarPuntos", () => {
@@ -24,14 +24,13 @@ describe("sumarPuntos", () => {
 });
 
 describe("resolverNivel", () => {
-  it("matches inclusive borders", () => {
+  it("matches inclusive borders for 0–40 / 41–70 / 71–94", () => {
     expect(resolverNivel(0, DIFIS)?.nivel).toBe("Inicial");
-    expect(resolverNivel(24, DIFIS)?.nivel).toBe("Inicial");
-    expect(resolverNivel(25, DIFIS)?.nivel).toBe("Moderada");
-    expect(resolverNivel(49, DIFIS)?.nivel).toBe("Moderada");
-    expect(resolverNivel(50, DIFIS)?.nivel).toBe("Media-alta");
-    expect(resolverNivel(75, DIFIS)?.nivel).toBe("Exigente");
-    expect(resolverNivel(80, DIFIS)?.nivel).toBe("Exigente");
+    expect(resolverNivel(40, DIFIS)?.nivel).toBe("Inicial");
+    expect(resolverNivel(41, DIFIS)?.nivel).toBe("Intermedio");
+    expect(resolverNivel(70, DIFIS)?.nivel).toBe("Intermedio");
+    expect(resolverNivel(71, DIFIS)?.nivel).toBe("Avanzado");
+    expect(resolverNivel(94, DIFIS)?.nivel).toBe("Avanzado");
   });
 
   it("falls back to closest midpoint on gap", () => {
@@ -47,7 +46,7 @@ describe("resolverNivel", () => {
       { ...DIFIS[0]!, activo: false },
       ...DIFIS.slice(1),
     ];
-    expect(resolverNivel(10, mixed)?.nivel).toBe("Moderada");
+    expect(resolverNivel(10, mixed)?.nivel).toBe("Intermedio");
   });
 
   it("returns null when no difficulties", () => {
@@ -57,14 +56,13 @@ describe("resolverNivel", () => {
 
 describe("calcularRangosEquidistantes", () => {
   it("splits score max into N bands", () => {
-    const rangos = calcularRangosEquidistantes(80, [
+    const rangos = calcularRangosEquidistantes(94, [
       { id_dificultad: 4 },
       { id_dificultad: 1 },
       { id_dificultad: 2 },
-      { id_dificultad: 3 },
     ]);
-    expect(rangos).toHaveLength(4);
-    expect(rangos[0]).toEqual({ id_dificultad: 4, puntaje_min: 0, puntaje_max: 19 });
-    expect(rangos[3]?.puntaje_max).toBeGreaterThanOrEqual(80);
+    expect(rangos).toHaveLength(3);
+    expect(rangos[0]).toEqual({ id_dificultad: 4, puntaje_min: 0, puntaje_max: 30 });
+    expect(rangos[2]?.puntaje_max).toBeGreaterThanOrEqual(94);
   });
 });

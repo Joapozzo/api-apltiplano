@@ -44,7 +44,7 @@ export function generateInscripcionClienteEmail(data) {
 
   <p>Hola <strong>${data.cliente.nombre} ${data.cliente.apellido}</strong>,</p>
 
-  <p>¡Te damos la bienvenida a tu próxima aventura con Altiplano Experience!</p>
+  <p>¡Te damos la bienvenida a tu próxima experiencia con Altiplano Experience!</p>
 
   <div style="background: #f9f9f9; border-radius: 8px; padding: 20px; margin: 20px 0;">
     <h3 style="margin-top: 0; color: #f59e0b;">Detalles de tu expedition</h3>
