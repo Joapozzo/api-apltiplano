@@ -24,6 +24,16 @@ describe("CSRF", () => {
     expect(res.body.code).toBe("CSRF_MISSING");
   });
 
+  it("DELETE with Bearer Authorization skips CSRF cookie check", async () => {
+    const res = await request(app)
+      .delete("/api/servicios/1")
+      .set("Authorization", "Bearer fake-firebase-token");
+
+    expect(res.body.code).not.toBe("CSRF_MISSING");
+    expect(res.body.code).not.toBe("CSRF_MISSING_HEADER");
+    expect(res.body.code).not.toBe("CSRF_INVALID");
+  });
+
   it("DELETE with cookie and matching X-CSRF-Token passes CSRF check", async () => {
     const csrfRes = await request(app).get("/api/auth/csrf");
     const token = csrfRes.body.csrfToken as string;
