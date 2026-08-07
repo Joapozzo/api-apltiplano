@@ -1,3 +1,4 @@
+import { formatDateOnly } from "./dates.js";
 import { normalizeFocal, parseFotosFocalMap, publicIdFromImageUrl, resolveFocalForUrl, } from "./fotos-focal.js";
 /**
  * Servicio público alineado al front: `fotos[]`, `desc` (texto card), focals.
@@ -22,12 +23,15 @@ export function normalizeServicioPublic(raw) {
     };
 }
 /**
- * Expedición pública: fechas ISO string + `precios` (sin `expedicion_precios`).
+ * Expedición pública: fechas de calendario `YYYY-MM-DD` + `precios` (sin `expedicion_precios`).
  */
 export function normalizeExpedicionPublic(raw) {
     const { expedicion_precios, ...rest } = raw;
-    const fechaSalida = raw.fecha_salida instanceof Date ? raw.fecha_salida.toISOString() : String(raw.fecha_salida);
-    const fechaFin = raw.fecha_fin instanceof Date ? raw.fecha_fin.toISOString() : String(raw.fecha_fin);
+    const fechaSalida = formatDateOnly(raw.fecha_salida) ?? String(raw.fecha_salida).slice(0, 10);
+    const fechaFin = formatDateOnly(raw.fecha_fin) ?? String(raw.fecha_fin).slice(0, 10);
+    const presupuestoValidoHasta = raw.presupuesto_valido_hasta == null || raw.presupuesto_valido_hasta === ""
+        ? null
+        : formatDateOnly(raw.presupuesto_valido_hasta);
     const precios = expedicion_precios.map((p) => ({
         nombre_paquete: p.nombre_paquete,
         precio: Number(p.precio),
@@ -37,6 +41,9 @@ export function normalizeExpedicionPublic(raw) {
         ...rest,
         fecha_salida: fechaSalida,
         fecha_fin: fechaFin,
+        ...(raw.presupuesto_valido_hasta !== undefined
+            ? { presupuesto_valido_hasta: presupuestoValidoHasta }
+            : {}),
         precios,
     };
 }

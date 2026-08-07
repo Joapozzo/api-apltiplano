@@ -1,5 +1,6 @@
 import { prisma } from "../../database/prisma.js";
 import { NOTIFICACION_SEVERIDAD, NOTIFICACION_TIPOS } from "../../types/notificaciones.dto.js";
+import { formatCalendarDateAR } from "../../utils/dates.js";
 
 interface EmitOptions {
   tipo: string;
@@ -43,7 +44,7 @@ export async function emitInscripcionNueva(data: {
   fecha_salida: Date;
 }) {
   const dedupeKey = `${NOTIFICACION_TIPOS.INSCRIPCION_NUEVA}:${data.id_inscripcion}`;
-  const mensaje = `${data.cliente} — ${data.servicio} (${data.fecha_salida.toLocaleDateString("es-AR")})`;
+  const mensaje = `${data.cliente} — ${data.servicio} (${formatCalendarDateAR(data.fecha_salida)})`;
 
   return upsertNotificacion(dedupeKey, {
     tipo: NOTIFICACION_TIPOS.INSCRIPCION_NUEVA,
@@ -66,7 +67,7 @@ export async function emitSalidaEstadoCompleta(data: {
     tipo: NOTIFICACION_TIPOS.SALIDA_ESTADO_COMPLETA,
     severidad: NOTIFICACION_SEVERIDAD.INFO,
     titulo: "Salida completada",
-    mensaje: `${data.nombre_servicio} (${data.fecha_salida.toLocaleDateString("es-AR")})`,
+    mensaje: `${data.nombre_servicio} (${formatCalendarDateAR(data.fecha_salida)})`,
     enlace: `/adm/salidas?id=${data.id_expedicion}`,
     metadata: { id_expedicion: data.id_expedicion },
   });

@@ -12,6 +12,7 @@ import { decryptClientePii, decryptInscripcionRecord } from "../utils/data-prote
 import { INSCRIPCION_ESTADOS, normalizeInscripcionUpdate } from "../utils/inscripcion-estado.js";
 import { removeInscripcionRecord } from "../utils/inscripcion-cleanup.js";
 import { ExpedicionesService } from "./expediciones.service.js";
+import { formatDateOnly, parseDateOnlyInput } from "../utils/dates.js";
 async function resolveOrCreateClienteForInscripcion(tx, usuario) {
     const email = usuario.email.trim().toLowerCase();
     const nombre = usuario.nombre.trim();
@@ -168,7 +169,7 @@ export class InscripcionesService {
         const expedicion = validation.expedicion;
         const clienteFromToken = validation.cliente ?? null;
         const fnac = typeof data.usuario.fecha_nacimiento === "string"
-            ? new Date(data.usuario.fecha_nacimiento)
+            ? parseDateOnlyInput(data.usuario.fecha_nacimiento)
             : data.usuario.fecha_nacimiento;
         const estadoInicial = await getInscripcionEstadoInicial();
         const result = await prisma.$transaction(async (tx) => {
@@ -294,8 +295,8 @@ export class InscripcionesService {
                     slug: expedicionData.servicios.slug || "",
                 },
                 expedicion: {
-                    fecha_salida: expedicionData.fecha_salida.toISOString(),
-                    fecha_fin: expedicionData.fecha_fin.toISOString(),
+                    fecha_salida: formatDateOnly(expedicionData.fecha_salida) ?? "",
+                    fecha_fin: formatDateOnly(expedicionData.fecha_fin) ?? "",
                 },
                 inscripcion: {
                     id: emitResult.inscripcion_id,
@@ -523,7 +524,7 @@ export class InscripcionesService {
                 expedicion: {
                     id_expedicion: r.expediciones.id_expedicion,
                     nombre: r.expediciones.servicios.nombre,
-                    fecha_salida: r.expediciones.fecha_salida.toISOString(),
+                    fecha_salida: formatDateOnly(r.expediciones.fecha_salida) ?? "",
                 },
                 expires_at: r.expires_at.toISOString(),
                 usado: r.usado,

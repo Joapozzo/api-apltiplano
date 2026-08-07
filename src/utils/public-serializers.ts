@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { formatDateOnly } from "./dates.js";
 import {
   normalizeFocal,
   parseFotosFocalMap,
@@ -59,12 +60,13 @@ export function normalizeServicioPublic<
 }
 
 /**
- * Expedición pública: fechas ISO string + `precios` (sin `expedicion_precios`).
+ * Expedición pública: fechas de calendario `YYYY-MM-DD` + `precios` (sin `expedicion_precios`).
  */
 export function normalizeExpedicionPublic<
   T extends {
     fecha_salida: Date | string;
     fecha_fin: Date | string;
+    presupuesto_valido_hasta?: Date | string | null;
     expedicion_precios: Array<{
       nombre_paquete: string;
       precio: Prisma.Decimal | number | string;
@@ -73,8 +75,12 @@ export function normalizeExpedicionPublic<
   },
 >(raw: T) {
   const { expedicion_precios, ...rest } = raw;
-  const fechaSalida = raw.fecha_salida instanceof Date ? raw.fecha_salida.toISOString() : String(raw.fecha_salida);
-  const fechaFin = raw.fecha_fin instanceof Date ? raw.fecha_fin.toISOString() : String(raw.fecha_fin);
+  const fechaSalida = formatDateOnly(raw.fecha_salida) ?? String(raw.fecha_salida).slice(0, 10);
+  const fechaFin = formatDateOnly(raw.fecha_fin) ?? String(raw.fecha_fin).slice(0, 10);
+  const presupuestoValidoHasta =
+    raw.presupuesto_valido_hasta == null || raw.presupuesto_valido_hasta === ""
+      ? null
+      : formatDateOnly(raw.presupuesto_valido_hasta);
 
   const precios: PublicPrecioItem[] = expedicion_precios.map((p) => ({
     nombre_paquete: p.nombre_paquete,
@@ -86,6 +92,9 @@ export function normalizeExpedicionPublic<
     ...rest,
     fecha_salida: fechaSalida,
     fecha_fin: fechaFin,
+    ...(raw.presupuesto_valido_hasta !== undefined
+      ? { presupuesto_valido_hasta: presupuestoValidoHasta }
+      : {}),
     precios,
   };
 }
