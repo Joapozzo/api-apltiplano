@@ -205,40 +205,68 @@ export class InscripcionesService {
                     saldo_pagado: false,
                     dni: data.usuario.dni,
                     fecha_nacimiento: fnac,
-                    telefono: data.usuario.telefono ?? null,
-                    provincia: data.usuario.provincia ?? null,
-                    emergencia_nombre: data.usuario.emergencia_nombre ?? null,
-                    emergencia_telefono: data.usuario.emergencia_telefono ?? null,
+                    telefono: data.usuario.telefono,
+                    provincia: data.usuario.provincia,
+                    localidad: data.usuario.localidad,
+                    nacionalidad: data.usuario.nacionalidad,
+                    emergencia_nombre: data.usuario.emergencia_nombre,
+                    emergencia_telefono: data.usuario.emergencia_telefono,
+                    emergencia_vinculo: data.usuario.emergencia_vinculo,
+                    como_nos_conociste: data.como_nos_conociste,
+                    acepta_riesgo: true,
+                    acepta_riesgo_at: new Date(),
                 },
             });
-            if (data.datos_medicos) {
-                await tx.inscripcion_datos_medicos.create({
-                    data: {
-                        id_inscripcion: inscripcion.id_inscripcion,
-                        cobertura_medica: data.datos_medicos.cobertura_medica ?? null,
-                        grupo_sanguineo: data.datos_medicos.grupo_sanguineo ?? null,
-                        alergias: data.datos_medicos.alergias,
-                        alergias_detalle: data.datos_medicos.alergias_detalle ?? null,
-                        diabetes: data.datos_medicos.diabetes,
-                        asma: data.datos_medicos.asma,
-                        hipertension: data.datos_medicos.hipertension,
-                        otros_antecedentes: data.datos_medicos.otros_antecedentes ?? null,
-                    },
-                });
-            }
-            if (data.actividad_fisica) {
-                await tx.inscripcion_actividad_fisica.create({
-                    data: {
-                        id_inscripcion: inscripcion.id_inscripcion,
-                        realiza_entrenamiento: data.actividad_fisica.realiza_entrenamiento,
-                        tipo_entrenamiento: data.actividad_fisica.tipo_entrenamiento ?? null,
-                        frecuencia_semanal: data.actividad_fisica.frecuencia_semanal ?? null,
-                        experiencia_trekking: data.actividad_fisica.experiencia_trekking,
-                        altura_cm: data.actividad_fisica.altura_cm ?? null,
-                        peso_kg: data.actividad_fisica.peso_kg ?? null,
-                    },
-                });
-            }
+            const dm = data.datos_medicos;
+            await tx.inscripcion_datos_medicos.create({
+                data: {
+                    id_inscripcion: inscripcion.id_inscripcion,
+                    cobertura_medica: dm.cobertura_medica ?? null,
+                    grupo_sanguineo: dm.grupo_sanguineo ?? null,
+                    alergias: dm.alergias,
+                    alergias_detalle: dm.alergias_detalle ?? null,
+                    diabetes: dm.diabetes,
+                    asma: dm.asma,
+                    hipertension: dm.hipertension,
+                    otros_antecedentes: dm.otros_antecedentes ?? null,
+                    toma_medicacion: dm.toma_medicacion,
+                    medicacion_detalle: dm.medicacion_detalle ?? null,
+                    tratamiento_medico: dm.tratamiento_medico,
+                    usa_lentes: dm.usa_lentes,
+                    lentes_detalle: dm.lentes_detalle ?? null,
+                    estado_salud: dm.estado_salud ?? null,
+                    restricciones_alimentarias: dm.restricciones_alimentarias,
+                    celiaquia: dm.celiaquia,
+                    epilepsia: dm.epilepsia,
+                    corazon: dm.corazon,
+                    convulsiones: dm.convulsiones,
+                    hepatitis: dm.hepatitis,
+                    problemas_respiratorios: dm.problemas_respiratorios,
+                    enfermedades_sangre: dm.enfermedades_sangre,
+                    problemas_auditivos: dm.problemas_auditivos,
+                    fuma: dm.fuma,
+                    vertigo: dm.vertigo,
+                    ataques_panico: dm.ataques_panico,
+                    antecedentes_detalle: dm.antecedentes_detalle ?? null,
+                    operaciones: dm.operaciones,
+                    lesiones: dm.lesiones,
+                    limitante_fisica: dm.limitante_fisica,
+                },
+            });
+            const af = data.actividad_fisica;
+            await tx.inscripcion_actividad_fisica.create({
+                data: {
+                    id_inscripcion: inscripcion.id_inscripcion,
+                    realiza_entrenamiento: af.realiza_entrenamiento,
+                    tipo_entrenamiento: af.tipo_entrenamiento ?? null,
+                    frecuencia_semanal: af.frecuencia_semanal ?? null,
+                    experiencia_trekking: af.experiencia_trekking,
+                    experiencia_trekking_detalle: af.experiencia_trekking_detalle ?? null,
+                    altura_cm: af.altura_cm,
+                    peso_kg: af.peso_kg,
+                    talle: af.talle,
+                },
+            });
             const clienteRow = await tx.clientes.findUniqueOrThrow({ where: { id_cliente } });
             await tx.clientes.update({
                 where: { id_cliente },

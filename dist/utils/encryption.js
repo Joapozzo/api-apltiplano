@@ -79,8 +79,29 @@ export function generateEncryptionKey() {
 export const SensitiveFields = {
     usuario: ["email", "nombre", "apellido", "telefono"],
     cliente: ["email", "nombre", "apellido", "telefono", "dni"],
-    inscripcion: ["dni", "telefono", "provincia", "emergencia_nombre", "emergencia_telefono"],
-    datos_medicos: ["grupo_sanguineo", "cobertura_medica"],
+    inscripcion: [
+        "dni",
+        "telefono",
+        "provincia",
+        "localidad",
+        "nacionalidad",
+        "emergencia_nombre",
+        "emergencia_telefono",
+        "emergencia_vinculo",
+    ],
+    datos_medicos: [
+        "grupo_sanguineo",
+        "cobertura_medica",
+        "alergias_detalle",
+        "otros_antecedentes",
+        "medicacion_detalle",
+        "lentes_detalle",
+        "estado_salud",
+        "restricciones_alimentarias",
+        "antecedentes_detalle",
+        "operaciones",
+        "lesiones",
+    ],
 };
 export function encryptFields(data, fields) {
     if (!data)

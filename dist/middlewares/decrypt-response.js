@@ -3,8 +3,29 @@ const PUBLIC_PATHS = ["/api/servicios", "/api/salidas", "/api/user/servicios", "
 const SENSITIVE_RESPONSE_FIELDS = {
     "usuarios.email": ["email"],
     "clientes.email": ["email", "nombre", "apellido", "telefono"],
-    "inscripciones.dni": ["dni", "telefono", "provincia", "emergencia_nombre", "emergencia_telefono"],
-    inscripcion_datos_medicos: ["grupo_sanguineo", "cobertura_medica"],
+    "inscripciones.dni": [
+        "dni",
+        "telefono",
+        "provincia",
+        "localidad",
+        "nacionalidad",
+        "emergencia_nombre",
+        "emergencia_telefono",
+        "emergencia_vinculo",
+    ],
+    inscripcion_datos_medicos: [
+        "grupo_sanguineo",
+        "cobertura_medica",
+        "alergias_detalle",
+        "otros_antecedentes",
+        "medicacion_detalle",
+        "lentes_detalle",
+        "estado_salud",
+        "restricciones_alimentarias",
+        "antecedentes_detalle",
+        "operaciones",
+        "lesiones",
+    ],
 };
 function isEncryptedValue(value) {
     if (!value)

@@ -4,8 +4,25 @@ export const INSCRIPCION_PII_FIELDS = [
     "dni",
     "telefono",
     "provincia",
+    "localidad",
+    "nacionalidad",
     "emergencia_nombre",
     "emergencia_telefono",
+    "emergencia_vinculo",
+];
+/** Textos sensibles de datos médicos (cifrados en DB) */
+export const DATOS_MEDICOS_ENCRYPTED_FIELDS = [
+    "cobertura_medica",
+    "grupo_sanguineo",
+    "alergias_detalle",
+    "otros_antecedentes",
+    "medicacion_detalle",
+    "lentes_detalle",
+    "estado_salud",
+    "restricciones_alimentarias",
+    "antecedentes_detalle",
+    "operaciones",
+    "lesiones",
 ];
 /** Campos de clientes/usuarios que deben permanecer en texto plano (búsqueda y display) */
 export const CLIENT_PLAIN_FIELDS = ["nombre", "apellido"];
@@ -31,6 +48,9 @@ export function encryptInscripcionPii(data) {
 export function decryptInscripcionPii(data) {
     return decryptObjectFields(data, [...INSCRIPCION_PII_FIELDS]);
 }
+export function encryptDatosMedicosFields(data) {
+    return encryptObjectFields(data, [...DATOS_MEDICOS_ENCRYPTED_FIELDS]);
+}
 export function decryptClientePii(data) {
     return decryptObjectFields(data, ["nombre", "apellido", "email", "telefono"]);
 }
@@ -41,10 +61,7 @@ export function decryptInscripcionRecord(inscripcion) {
     }
     if (result.inscripcion_datos_medicos && typeof result.inscripcion_datos_medicos === "object") {
         result.inscripcion_datos_medicos = decryptObjectFields(result.inscripcion_datos_medicos, [
-            "cobertura_medica",
-            "grupo_sanguineo",
-            "alergias_detalle",
-            "otros_antecedentes",
+            ...DATOS_MEDICOS_ENCRYPTED_FIELDS,
         ]);
     }
     return result;
