@@ -1,5 +1,6 @@
 import { NOTIFICACION_TIPOS, NOTIFICACION_SEVERIDAD } from "../types/notificaciones.dto.js";
 import { expedicionEsOperativa, expedicionEstaFinalizada } from "./expedicion-estado.js";
+import { formatCalendarDateAR, formatDateOnly } from "./dates.js";
 
 interface NotificacionRule {
   dedupeKey: string;
@@ -63,7 +64,7 @@ export function getNotificacionesRules(
         tipo: NOTIFICACION_TIPOS.SALIDA_CUPOS_LLENOS,
         severidad: NOTIFICACION_SEVERIDAD.CRITICAL,
         titulo: "Cupos completos",
-        mensaje: `${exp.servicios.nombre} — ${exp.fecha_salida.toLocaleDateString("es-AR")}`,
+        mensaje: `${exp.servicios.nombre} — ${formatCalendarDateAR(exp.fecha_salida)}`,
         enlace: `/adm/salidas?id=${exp.id_expedicion}`,
         metadata: { id_expedicion: exp.id_expedicion },
       });
@@ -96,11 +97,11 @@ export function getNotificacionesRules(
           tipo: NOTIFICACION_TIPOS.SALIDA_PRESUPUESTO_VENCIDO,
           severidad: NOTIFICACION_SEVERIDAD.CRITICAL,
           titulo: "Presupuesto vencido",
-          mensaje: `${exp.servicios.nombre} — vigente hasta ${exp.presupuesto_valido_hasta.toLocaleDateString("es-AR")}`,
+          mensaje: `${exp.servicios.nombre} — vigente hasta ${formatCalendarDateAR(exp.presupuesto_valido_hasta)}`,
           enlace: `/adm/salidas?id=${exp.id_expedicion}`,
           metadata: {
             id_expedicion: exp.id_expedicion,
-            presupuesto_valido_hasta: exp.presupuesto_valido_hasta.toISOString(),
+            presupuesto_valido_hasta: formatDateOnly(exp.presupuesto_valido_hasta),
           },
         });
       } else if (diasRestantes >= 0 && diasRestantes <= dias_presupuesto_aviso) {
@@ -113,7 +114,7 @@ export function getNotificacionesRules(
           enlace: `/adm/salidas?id=${exp.id_expedicion}`,
           metadata: {
             id_expedicion: exp.id_expedicion,
-            presupuesto_valido_hasta: exp.presupuesto_valido_hasta.toISOString(),
+            presupuesto_valido_hasta: formatDateOnly(exp.presupuesto_valido_hasta),
           },
         });
       } else {
@@ -132,7 +133,7 @@ export function getNotificacionesRules(
         tipo: NOTIFICACION_TIPOS.SALIDA_URGENTE,
         severidad: NOTIFICACION_SEVERIDAD.WARNING,
         titulo: "Salida muy próxima",
-        mensaje: `${exp.servicios.nombre} — ${exp.fecha_salida.toLocaleDateString("es-AR")}`,
+        mensaje: `${exp.servicios.nombre} — ${formatCalendarDateAR(exp.fecha_salida)}`,
         enlace: `/adm/salidas?id=${exp.id_expedicion}`,
         metadata: { id_expedicion: exp.id_expedicion },
       });
@@ -142,7 +143,7 @@ export function getNotificacionesRules(
         tipo: NOTIFICACION_TIPOS.SALIDA_PROXIMA,
         severidad: NOTIFICACION_SEVERIDAD.INFO,
         titulo: "Salida próxima",
-        mensaje: `${exp.servicios.nombre} — ${exp.fecha_salida.toLocaleDateString("es-AR")}`,
+        mensaje: `${exp.servicios.nombre} — ${formatCalendarDateAR(exp.fecha_salida)}`,
         enlace: `/adm/salidas?id=${exp.id_expedicion}`,
         metadata: { id_expedicion: exp.id_expedicion },
       });

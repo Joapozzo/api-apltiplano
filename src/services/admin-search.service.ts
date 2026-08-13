@@ -1,5 +1,6 @@
 import { prisma } from "../database/prisma.js";
 import { decryptClientePii } from "../utils/data-protection.js";
+import { formatCalendarDateAR } from "../utils/dates.js";
 
 export type AdminSearchResultType = "cliente" | "servicio" | "salida";
 
@@ -132,7 +133,7 @@ export class AdminSearchService {
     });
 
     return salidas.map((s) => {
-      const fecha = new Date(s.fecha_salida).toLocaleDateString("es-AR", {
+      const fecha = formatCalendarDateAR(s.fecha_salida, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",

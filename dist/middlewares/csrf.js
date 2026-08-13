@@ -51,6 +51,12 @@ export function csrfMiddleware(req, res, next) {
     if (safeMethods.includes(req.method)) {
         return next();
     }
+    // SPA admin auth uses Firebase Bearer (not auto-sent by browsers). Cookie CSRF
+    // fails cross-origin when third-party cookies are blocked; Bearer is enough here.
+    const authorization = req.headers.authorization;
+    if (typeof authorization === "string" && authorization.startsWith("Bearer ")) {
+        return next();
+    }
     const csrfHeader = req.headers["x-csrf-token"];
     const csrfToken = Array.isArray(csrfHeader) ? csrfHeader[0] : csrfHeader;
     const cookieToken = req.cookies?.csrf_token;

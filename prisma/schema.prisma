@@ -324,8 +324,14 @@ model inscripciones {
   fecha_nacimiento    DateTime?
   telefono            String?
   provincia           String?
+  localidad           String?
+  nacionalidad        String?
   emergencia_nombre   String?
   emergencia_telefono String?
+  emergencia_vinculo  String?
+  como_nos_conociste  String?
+  acepta_riesgo       Boolean   @default(false)
+  acepta_riesgo_at    DateTime?
 
   clientes                     clientes                      @relation(fields: [id_cliente], references: [id_cliente])
   expediciones                 expediciones                  @relation(fields: [id_expedicion], references: [id_expedicion])
@@ -347,18 +353,43 @@ model inscripcion_datos_medicos {
   hipertension       Boolean @default(false)
   otros_antecedentes String?
 
+  toma_medicacion            Boolean @default(false)
+  medicacion_detalle         String?
+  tratamiento_medico         Boolean @default(false)
+  usa_lentes                 Boolean @default(false)
+  lentes_detalle             String?
+  estado_salud               String?
+  restricciones_alimentarias String?
+  celiaquia                  Boolean @default(false)
+  epilepsia                  Boolean @default(false)
+  corazon                    Boolean @default(false)
+  convulsiones               Boolean @default(false)
+  hepatitis                  Boolean @default(false)
+  problemas_respiratorios    Boolean @default(false)
+  enfermedades_sangre        Boolean @default(false)
+  problemas_auditivos        Boolean @default(false)
+  fuma                       Boolean @default(false)
+  vertigo                    Boolean @default(false)
+  ataques_panico             Boolean @default(false)
+  antecedentes_detalle       String?
+  operaciones                String?
+  lesiones                   String?
+  limitante_fisica           Boolean @default(false)
+
   inscripciones inscripciones @relation(fields: [id_inscripcion], references: [id_inscripcion], onDelete: Cascade)
 }
 
 model inscripcion_actividad_fisica {
-  id_actividad_fisica   Int     @id @default(autoincrement())
-  id_inscripcion        Int     @unique
-  realiza_entrenamiento Boolean @default(false)
-  tipo_entrenamiento    String?
-  frecuencia_semanal    Int?
-  experiencia_trekking  Boolean @default(false)
-  altura_cm             Int?
-  peso_kg               Int?
+  id_actividad_fisica            Int     @id @default(autoincrement())
+  id_inscripcion                 Int     @unique
+  realiza_entrenamiento          Boolean @default(false)
+  tipo_entrenamiento             String?
+  frecuencia_semanal             Int?
+  experiencia_trekking           Boolean @default(false)
+  experiencia_trekking_detalle   String?
+  altura_cm                      Int?
+  peso_kg                        Int?
+  talle                          String?
 
   inscripciones inscripciones @relation(fields: [id_inscripcion], references: [id_inscripcion], onDelete: Cascade)
 }

@@ -13,6 +13,7 @@ import {
   purgeNotificacionesExpedicion,
   purgeNotificacionesSalidaExpedicion,
 } from "../utils/notificaciones-cleanup.js";
+import { parseDateOnlyInput } from "../utils/dates.js";
 
 export interface ExpedicionFilters {
   estado?: string;
@@ -264,8 +265,8 @@ export class ExpedicionesService {
     }
 
     // Validar fechas
-    const fechaSalida = new Date(data.fecha_salida);
-    const fechaFin = new Date(data.fecha_fin);
+    const fechaSalida = parseDateOnlyInput(data.fecha_salida);
+    const fechaFin = parseDateOnlyInput(data.fecha_fin);
 
     if (fechaSalida > fechaFin) {
       throw new Error("La fecha de fin debe ser posterior a la fecha de salida");
@@ -280,10 +281,10 @@ export class ExpedicionesService {
 
     let presupuestoHasta: Date | null;
     if (data.presupuesto_valido_hasta) {
-      presupuestoHasta = new Date(data.presupuesto_valido_hasta);
+      presupuestoHasta = parseDateOnlyInput(data.presupuesto_valido_hasta);
     } else {
       const validezDate = new Date(fechaSalida);
-      validezDate.setDate(validezDate.getDate() + diasValidez);
+      validezDate.setUTCDate(validezDate.getUTCDate() + diasValidez);
       presupuestoHasta = validezDate;
     }
 
@@ -350,8 +351,8 @@ export class ExpedicionesService {
     }
 
     // Validar fechas
-    const fechaSalida = new Date(data.fecha_salida);
-    const fechaFin = new Date(data.fecha_fin);
+    const fechaSalida = parseDateOnlyInput(data.fecha_salida);
+    const fechaFin = parseDateOnlyInput(data.fecha_fin);
 
     if (fechaSalida > fechaFin) {
       throw new Error("La fecha de fin debe ser posterior a la fecha de salida");
@@ -375,7 +376,9 @@ export class ExpedicionesService {
             fecha_fin: fechaFin,
             cupos_disponibles: data.cupos_disponibles,
             estado: data.estado,
-            presupuesto_valido_hasta: data.presupuesto_valido_hasta ? new Date(data.presupuesto_valido_hasta) : null,
+            presupuesto_valido_hasta: data.presupuesto_valido_hasta
+              ? parseDateOnlyInput(data.presupuesto_valido_hasta)
+              : null,
             mostrar_precios: data.mostrar_precios ?? false,
             expedicion_precios: {
               create: data.precios.map((p) => ({

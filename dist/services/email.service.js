@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { createLogger } from "./logger.service.js";
+import { formatCalendarDateAR } from "../utils/dates.js";
 const logger = createLogger("email");
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM_EMAIL = "Altiplano Experience <onboarding@resend.dev>";
@@ -49,7 +50,7 @@ export function generateInscripcionClienteEmail(data) {
   <div style="background: #f9f9f9; border-radius: 8px; padding: 20px; margin: 20px 0;">
     <h3 style="margin-top: 0; color: #f59e0b;">Detalles de tu expedition</h3>
     <p><strong>Salida:</strong> ${data.servicio.nombre}</p>
-    <p><strong>Fecha:</strong> ${new Date(data.expedicion.fecha_salida).toLocaleDateString("es-AR")} - ${new Date(data.expedicion.fecha_fin).toLocaleDateString("es-AR")}</p>
+    <p><strong>Fecha:</strong> ${formatCalendarDateAR(data.expedicion.fecha_salida)} - ${formatCalendarDateAR(data.expedicion.fecha_fin)}</p>
     <p><strong>Estado:</strong> ${data.inscripcion.estado}</p>
   </div>
 
@@ -93,7 +94,7 @@ export function generateInscripcionAdminEmail(data) {
   <div style="background: #f9f9f9; border-radius: 8px; padding: 20px; margin: 20px 0;">
     <h3>Datos de la Expedition</h3>
     <p><strong>Salida:</strong> ${data.servicio.nombre}</p>
-    <p><strong>Fecha:</strong> ${new Date(data.expedicion.fecha_salida).toLocaleDateString("es-AR")} - ${new Date(data.expedicion.fecha_fin).toLocaleDateString("es-AR")}</p>
+    <p><strong>Fecha:</strong> ${formatCalendarDateAR(data.expedicion.fecha_salida)} - ${formatCalendarDateAR(data.expedicion.fecha_fin)}</p>
     <p><strong>ID Inscripcion:</strong> #${data.inscripcion.id}</p>
     <p><strong>Estado:</strong> ${data.inscripcion.estado}</p>
   </div>
