@@ -2,14 +2,13 @@ import crypto from "crypto";
 import type { CookieOptions } from "express";
 import type { Request, Response, NextFunction } from "express";
 
-/** Producción / Vercel: front y API en dominios distintos → SameSite=None + Secure. */
+/**
+ * Cookie CSRF first-party por defecto (front → `/api` vía rewrite de Next).
+ * Solo `SameSite=None` si el browser pega al API en otro origen (`CSRF_CROSS_ORIGIN=true`).
+ */
 export function getCsrfCookieOptions(): CookieOptions {
   const isProduction = process.env.NODE_ENV === "production";
-  const onVercel = Boolean(process.env.VERCEL);
-  const crossOrigin =
-    isProduction ||
-    onVercel ||
-    process.env.CSRF_CROSS_ORIGIN === "true";
+  const crossOrigin = process.env.CSRF_CROSS_ORIGIN === "true";
 
   return {
     httpOnly: true,
