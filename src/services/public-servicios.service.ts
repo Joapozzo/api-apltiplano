@@ -15,7 +15,8 @@ function startOfTodayLocal(): Date {
 
 export class PublicServiciosService {
   /**
-   * Catálogo: todos los servicios activos (con o sin próxima salida), filtros y orden.
+   * Catálogo: todos los servicios activos (con o sin salidas futuras), filtros y orden.
+   * Incluye `expediciones[]` (todas las futuras) y `expedicion` (la próxima).
    */
   static async listCatalog(query: ServiciosCatalogQuery): Promise<ApiPaginatedResponse<CatalogoServicioPar>> {
     const filtroExtra = buildServicioPublicWhere(
@@ -61,7 +62,6 @@ export class PublicServiciosService {
           fecha_salida: { gte: startOfTodayLocal() },
         },
         orderBy: { fecha_salida: "asc" as const },
-        take: 1,
         select: {
           id_expedicion: true,
           id_servicio: true,
@@ -88,20 +88,17 @@ export class PublicServiciosService {
     const items: CatalogoServicioPar[] = rows.map((row) => {
       const { expediciones, ...servicioRaw } = row;
       const servicioNorm = normalizeServicioPublic(servicioRaw);
-      const prox = expediciones[0];
-      if (!prox) {
-        return {
-          servicio: servicioNorm as SalidaPublicaPar["servicio"],
-          expedicion: null,
-        };
-      }
-      const expedicionNorm = normalizeExpedicionPublic({
-        ...prox,
-        expedicion_precios: prox.expedicion_precios ?? [],
-      });
+      const expedicionesNorm = expediciones.map((exp) =>
+        normalizeExpedicionPublic({
+          ...exp,
+          expedicion_precios: exp.expedicion_precios ?? [],
+        }),
+      ) as SalidaPublicaPar["expedicion"][];
+
       return {
         servicio: servicioNorm as SalidaPublicaPar["servicio"],
-        expedicion: expedicionNorm as SalidaPublicaPar["expedicion"],
+        expedicion: expedicionesNorm[0] ?? null,
+        expediciones: expedicionesNorm,
       };
     });
 

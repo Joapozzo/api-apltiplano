@@ -24,13 +24,26 @@ export function sortSalidaPares(pares: SalidaPublicaPar[], orden: PublicCatalogQ
   }
 }
 
+function expedicionesDeCatalogo(x: CatalogoServicioPar): SalidaPublicaPar["expedicion"][] {
+  if (x.expediciones?.length) return x.expediciones;
+  return x.expedicion ? [x.expedicion] : [];
+}
+
+function precioMinGrupo(x: CatalogoServicioPar): number {
+  const list = expedicionesDeCatalogo(x);
+  if (!list.length) return Number.POSITIVE_INFINITY;
+  return Math.min(...list.map(precioMin));
+}
+
 export function sortCatalogoServicioPares(
   items: CatalogoServicioPar[],
   orden: PublicCatalogQuery["orden"],
 ): CatalogoServicioPar[] {
   const copy = [...items];
-  const fechaVal = (x: CatalogoServicioPar) =>
-    x.expedicion?.fecha_salida ? new Date(x.expedicion.fecha_salida).getTime() : Number.POSITIVE_INFINITY;
+  const fechaVal = (x: CatalogoServicioPar) => {
+    const prox = expedicionesDeCatalogo(x)[0];
+    return prox?.fecha_salida ? new Date(prox.fecha_salida).getTime() : Number.POSITIVE_INFINITY;
+  };
 
   switch (orden) {
     case "nombre":
@@ -38,11 +51,7 @@ export function sortCatalogoServicioPares(
     case "dificultad":
       return copy.sort((a, b) => Number(b.servicio.altura_maxima ?? 0) - Number(a.servicio.altura_maxima ?? 0));
     case "precio":
-      return copy.sort((a, b) => {
-        const pa = a.expedicion ? precioMin(a.expedicion) : Number.POSITIVE_INFINITY;
-        const pb = b.expedicion ? precioMin(b.expedicion) : Number.POSITIVE_INFINITY;
-        return pa - pb;
-      });
+      return copy.sort((a, b) => precioMinGrupo(a) - precioMinGrupo(b));
     case "fecha":
     default:
       return copy.sort((a, b) => fechaVal(a) - fechaVal(b));

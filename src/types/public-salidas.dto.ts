@@ -81,10 +81,13 @@ export type SalidaPublicaPar = {
   };
 };
 
-/** Catálogo: servicio siempre; expedición solo si hay próxima salida. */
+/** Catálogo: servicio siempre; próxima salida + todas las futuras. */
 export type CatalogoServicioPar = {
   servicio: SalidaPublicaPar["servicio"];
+  /** Próxima salida (primera de `expediciones`), o null. */
   expedicion: SalidaPublicaPar["expedicion"] | null;
+  /** Todas las salidas futuras activas, ordenadas por fecha. */
+  expediciones: SalidaPublicaPar["expedicion"][];
 };
 
 export type SalidaCalendarioItem = SalidaPublicaPar & {
