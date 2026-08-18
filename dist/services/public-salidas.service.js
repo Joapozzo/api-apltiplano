@@ -61,18 +61,53 @@ function whereExpedicionesPublicas(query) {
         },
     };
 }
-function serializeDetalleUnificado(expedicion) {
+const detalleSiblingSelect = {
+    id_expedicion: true,
+    id_servicio: true,
+    fecha_salida: true,
+    fecha_fin: true,
+    cupos_disponibles: true,
+    cupos_ocupados: true,
+    estado: true,
+    expedicion_precios: {
+        select: { nombre_paquete: true, precio: true, moneda: true },
+    },
+};
+async function listExpedicionesFuturasPublicas(id_servicio) {
+    const rows = await prisma.expediciones.findMany({
+        where: {
+            id_servicio,
+            OR: [{ estado: "A" }, { estado: "Activa" }],
+            fecha_salida: { gte: startOfTodayLocal() },
+        },
+        orderBy: { fecha_salida: "asc" },
+        select: detalleSiblingSelect,
+    });
+    return rows.map((exp) => normalizeExpedicionPublic({
+        ...exp,
+        expedicion_precios: exp.expedicion_precios ?? [],
+    }));
+}
+function mergeSelectedIntoFuturas(selected, futuras) {
+    const selectedId = selected.id_expedicion;
+    if (futuras.some((exp) => exp.id_expedicion === selectedId))
+        return futuras;
+    return [selected, ...futuras];
+}
+async function serializeDetalleUnificado(expedicion) {
     const { servicios, expedicion_precios, ...rest } = expedicion;
     const expedicionNorm = normalizeExpedicionPublic({
         ...rest,
         expedicion_precios,
     });
     const servicioNorm = normalizeServicioPublic(servicios);
+    const futuras = await listExpedicionesFuturasPublicas(expedicion.id_servicio);
     return {
         success: true,
         data: {
             servicio: servicioNorm,
             expedicion: expedicionNorm,
+            expediciones: mergeSelectedIntoFuturas(expedicionNorm, futuras),
         },
     };
 }
@@ -219,6 +254,7 @@ export class PublicSalidasService {
             data: {
                 servicio: servicioNorm,
                 expedicion: null,
+                expediciones: [],
             },
         };
     }

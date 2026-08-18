@@ -64,6 +64,7 @@ export function normalizeServicioPublic<
  */
 export function normalizeExpedicionPublic<
   T extends {
+    id_expedicion: number;
     fecha_salida: Date | string;
     fecha_fin: Date | string;
     presupuesto_valido_hasta?: Date | string | null;
